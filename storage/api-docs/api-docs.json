@@ -58,10 +58,37 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "User registered"
+                        "description": "User registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Registered successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AuthData"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiErrorEnvelope"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": []
@@ -102,10 +129,37 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Authenticated"
+                        "description": "Authenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged in successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AuthData"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Invalid credentials"
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiErrorEnvelope"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": []
@@ -119,11 +173,25 @@
                 "summary": "Revoke the current token",
                 "operationId": "authLogout",
                 "responses": {
-                    "204": {
-                        "description": "Logged out"
+                    "200": {
+                        "description": "Logged out",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiSuccessEnvelope"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Unauthenticated"
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiErrorEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -137,13 +205,34 @@
                 "operationId": "dashboardShow",
                 "responses": {
                     "200": {
-                        "description": "Dashboard totals"
+                        "description": "Dashboard totals",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiSuccessEnvelope"
+                                }
+                            }
+                        }
                     },
                     "401": {
-                        "description": "Unauthenticated"
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiErrorEnvelope"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Missing permission"
+                        "description": "Missing permission",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiErrorEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -181,7 +270,14 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated project list"
+                        "description": "Paginated project list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiPaginatedEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -280,8 +376,15 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Project deleted"
+                    "200": {
+                        "description": "Project deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiSuccessEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -513,8 +616,15 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Task deleted"
+                    "200": {
+                        "description": "Task deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiSuccessEnvelope"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -581,6 +691,127 @@
         }
     },
     "components": {
+        "schemas": {
+            "ApiSuccessEnvelope": {
+                "required": [
+                    "success",
+                    "message",
+                    "data"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Projects loaded successfully",
+                        "nullable": true
+                    },
+                    "data": {
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ApiPaginatedEnvelope": {
+                "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "meta",
+                    "links"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "meta": {
+                        "type": "object"
+                    },
+                    "links": {
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "ApiErrorEnvelope": {
+                "required": [
+                    "success",
+                    "message"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Validation failed."
+                    },
+                    "errors": {
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Jane Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "jane@example.com"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "AuthData": {
+                "properties": {
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    },
+                    "token": {
+                        "type": "string",
+                        "example": "1|abc123..."
+                    }
+                },
+                "type": "object"
+            }
+        },
         "securitySchemes": {
             "sanctum": {
                 "type": "http",
