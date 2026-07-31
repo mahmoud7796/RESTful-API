@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Enums\TaskStatus;
 use App\Jobs\NotifyOverdueTasksJob;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Enums\TaskStatus;
 use App\Notifications\TaskOverdueNotification;
 use App\Repositories\Contracts\TaskRepositoryInterface;
 use Illuminate\Support\Facades\Notification;
