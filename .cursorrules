@@ -1,0 +1,41 @@
+PROJECT: Laravel REST API for a Task Management System (technical assessment).
+
+LAYERED ARCHITECTURE — STRICT
+Controller -> Service -> RepositoryInterface -> Eloquent implementation
+
+- Controllers: resolve the Form Request, call a Service, return an API Resource. Nothing else.
+  No business logic, no Eloquent, no query building. Target under 60 lines per controller.
+- Services (app/Services/): all business logic. Depend on repository INTERFACES via
+  constructor injection, never on concrete classes and never on Eloquent models statically.
+  A service must never contain "::where(" or "::find(".
+- Repositories (app/Repositories/): persistence only, zero business logic.
+  Contracts in app/Repositories/Contracts/, Eloquent implementations in app/Repositories/Eloquent/.
+  Repositories MUST return models, collections, or paginators — NEVER a query builder.
+- Bindings registered in app/Providers/RepositoryServiceProvider.php.
+
+CONVENTIONS
+- PHP 8.2+: constructor property promotion, readonly where sensible, native backed enums.
+- declare(strict_types=1); at the top of every PHP file.
+- All statuses and priorities are native backed enums in app/Enums/, cast on the model.
+- Every endpoint returns an API Resource (app/Http/Resources/), never a raw model or array.
+- Every write endpoint uses a dedicated Form Request in app/Http/Requests/.
+- Authorization via Policies. Never scatter where('user_id', auth()->id()) in controllers.
+- Route model binding everywhere. No manual findOrFail in controllers.
+- Soft deletes on projects and tasks.
+
+API DESIGN
+- All routes under /api/v1/.
+- Error envelope, always: {"message": string, "errors": object|null}
+- Status codes: 200 ok, 201 created, 204 no content on delete, 401, 403, 404, 422.
+- Paginated lists, default 15 per page, ?per_page= overridable with a max cap of 100.
+
+TESTING — PEST ONLY
+- Use Pest syntax exclusively: it('...', function () {...}); with the expect() API.
+- Never generate PHPUnit class-based tests.
+- Feature tests hit real HTTP routes with RefreshDatabase.
+- Unit tests for services use Mockery to mock the repository interface — no database.
+- Use Pest datasets for filter/permutation tests instead of repeating test bodies.
+
+STYLE
+- No comments explaining WHAT the code does. Only comment WHY when a decision is non-obvious.
+- No leftover TODOs, dead code, commented-out blocks, dd() or dump().
