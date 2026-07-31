@@ -8,6 +8,8 @@ A Laravel REST API for managing projects and tasks with Sanctum token authentica
 
 Keep the project inside the **WSL filesystem** (e.g. `/home/you/...`), not on a Windows-mounted drive (`/mnt/c/...`). Bind mounts across the Windows/WSL boundary are slow and can cause permission issues with Composer and PHP.
 
+The Docker setup targets local development: source is bind-mounted and dependencies live on the host. A production image would copy `composer.json`/`composer.lock` in a separate layer before the source, so dependency installation stays cached across code changes.
+
 ```bash
 git clone <repository-url> task-management-api
 cd task-management-api
@@ -37,7 +39,7 @@ docker compose exec app php artisan test
 
 ## Manual Setup (without Docker)
 
-Requires PHP 8.3+, Composer, MySQL 8, and Redis (used for cache and queues).
+Requires PHP 8.3+, Composer, MySQL 8, and Redis (used for cache and queues). For tests, also install the SQLite extension: `sudo apt install php8.3-sqlite` (WSL/Ubuntu).
 
 ```bash
 composer install
@@ -299,15 +301,20 @@ Omit `errors` when there are no field-level validation messages.
 
 ## Testing
 
-Run the suite **inside the app container** — this is the command reviewers should use:
+`phpunit.xml` configures Feature tests with in-memory SQLite (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`). That keeps tests fast and isolated. The Docker app image installs `pdo_sqlite` explicitly.
+
+**Inside Docker (recommended — use this for review):**
 
 ```bash
 docker compose exec app php artisan test
 ```
 
-`phpunit.xml` configures Feature tests with in-memory SQLite (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`). That keeps tests fast and isolated. The app image installs `pdo_sqlite` explicitly so `php artisan test` works the same as `./vendor/bin/pest`.
+**On WSL host:** only works if PHP has SQLite (`php -m | grep pdo_sqlite`). If missing, Feature tests fail with `could not find driver` (Unit tests still pass):
 
-Do **not** run `php artisan test` on the host unless WSL/local PHP also has the SQLite PDO extension; without it, Feature tests fail with `could not find driver`.
+```bash
+sudo apt install php8.3-sqlite
+php artisan test
+```
 
 The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, authorization (Spatie permissions and service ownership), project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — `ProjectService`, `AuthService`, write-path DTOs — to verify delegation and casting without a database.
 
