@@ -21,6 +21,8 @@ docker compose exec app php artisan migrate --seed
 docker compose exec app php artisan l5-swagger:generate
 ```
 
+On a cold start MySQL may need a few seconds after the container reports healthy. If `migrate --seed` fails on the first attempt, re-run it.
+
 The API is available at `http://localhost:8000/api/v1`.
 
 **Demo credentials** (created by the seeder):
