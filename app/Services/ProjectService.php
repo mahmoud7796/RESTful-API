@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Enums\ProjectStatus;
+use App\Models\Project;
+use App\Models\User;
+use App\Repositories\Contracts\ProjectRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
+class ProjectService
+{
+    public function __construct(
+        private readonly ProjectRepositoryInterface $projectRepository,
+    ) {}
+
+    public function list(User $user, ?ProjectStatus $status, int $perPage): LengthAwarePaginator
+    {
+        return $this->projectRepository->paginateForUser($user, $status, $perPage);
+    }
+
+    public function create(User $user, array $attributes): Project
+    {
+        return $this->projectRepository->create($user, $attributes);
+    }
+
+    public function show(Project $project): Project
+    {
+        return $this->projectRepository->loadTasks($project);
+    }
+
+    public function update(Project $project, array $attributes): Project
+    {
+        return $this->projectRepository->update($project, $attributes);
+    }
+
+    public function delete(Project $project): bool
+    {
+        return $this->projectRepository->delete($project);
+    }
+}

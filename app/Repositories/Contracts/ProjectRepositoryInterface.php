@@ -23,5 +23,7 @@ interface ProjectRepositoryInterface
 
     public function delete(Project $project): bool;
 
+    public function loadTasks(Project $project): Project;
+
     public function countsForUser(User $user): array;
 }
