@@ -1,8 +1,8 @@
 FROM php:8.3-fpm-alpine
 
-RUN apk add --no-cache git unzip libzip-dev icu-dev \
+RUN apk add --no-cache git unzip libzip-dev icu-dev sqlite-dev \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
-    && docker-php-ext-install pdo_mysql bcmath opcache pcntl zip intl \
+    && docker-php-ext-install pdo_mysql pdo_sqlite bcmath opcache pcntl zip intl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && pecl clear-cache \
