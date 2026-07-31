@@ -212,7 +212,7 @@
               }
             ],
             "url": "{{base_url}}/projects/1",
-            "description": "Show a single project with nested tasks. Replace 1 with a project ID you own."
+            "description": "Show a single project with tasks_count. Use List Tasks for the paginated task list. Replace 1 with a project ID you own."
           },
           "response": []
         },

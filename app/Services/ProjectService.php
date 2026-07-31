@@ -31,7 +31,7 @@ class ProjectService
     {
         $this->ensureOwnedBy($project, $user);
 
-        return $this->projectRepository->loadTasks($project);
+        return $this->projectRepository->loadTaskCount($project);
     }
 
     public function update(Project $project, User $user, array $attributes): Project

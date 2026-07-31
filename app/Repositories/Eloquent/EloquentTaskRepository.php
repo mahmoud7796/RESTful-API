@@ -34,7 +34,10 @@ class EloquentTaskRepository implements TaskRepositoryInterface
             ->when($search, function (Builder $query, string $term): void {
                 $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term);
                 // User-supplied % and _ must be literals, not LIKE wildcards — otherwise search becomes an unintended filter.
-                $query->whereRaw("LOWER(title) LIKE ? ESCAPE '\\'", ['%'.mb_strtolower($escaped).'%']);
+                $query->whereRaw('LOWER(title) LIKE ? ESCAPE ?', [
+                    '%'.mb_strtolower($escaped).'%',
+                    '\\',
+                ]);
             })
             ->latest()
             ->paginate($perPage);

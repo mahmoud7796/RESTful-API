@@ -109,6 +109,8 @@ The dashboard needs six metrics across projects and tasks. Instead of six separa
 
 Tasks are created under `/projects/{project}/tasks` but show/update/delete use `/tasks/{task}` (shallow nesting). This keeps URLs short for common CRUD while preserving the parent context at creation time.
 
+`GET /projects/{project}` returns project metadata and `tasks_count` only. Use `GET /projects/{project}/tasks` (paginated) to load tasks — this avoids loading thousands of tasks in a single response.
+
 ### Index strategy
 
 | Index | Table | Serves |
@@ -133,7 +135,7 @@ Tasks are created under `/projects/{project}/tasks` but show/update/delete use `
 | `GET` | `/api/v1/dashboard` | Yes | Aggregated project and task metrics |
 | `GET` | `/api/v1/projects` | Yes | List projects (paginated; optional `?status=`, `?per_page=`) |
 | `POST` | `/api/v1/projects` | Yes | Create a project |
-| `GET` | `/api/v1/projects/{project}` | Yes | Show a project with nested tasks |
+| `GET` | `/api/v1/projects/{project}` | Yes | Show a project (`tasks_count` only; use `/projects/{project}/tasks` for the task list) |
 | `PATCH` | `/api/v1/projects/{project}` | Yes | Update a project |
 | `DELETE` | `/api/v1/projects/{project}` | Yes | Soft-delete a project |
 | `GET` | `/api/v1/projects/{project}/tasks` | Yes | List tasks (optional `?status=`, `?priority=`, `?search=`, `?per_page=`) |

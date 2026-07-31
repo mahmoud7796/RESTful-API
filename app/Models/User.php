@@ -25,15 +25,17 @@ class User extends Authenticatable
 
     protected string $guard_name = 'web';
 
-    protected static function booted(): void
+    public function assignDefaultRole(): void
     {
-        static::created(function (User $user): void {
-            if (! Role::query()->where('name', PermissionSeeder::ROLE_USER)->where('guard_name', 'web')->exists()) {
-                return;
-            }
+        if (! Role::query()->where('name', PermissionSeeder::ROLE_USER)->where('guard_name', 'web')->exists()) {
+            return;
+        }
 
-            $user->assignRole(PermissionSeeder::ROLE_USER);
-        });
+        if ($this->hasRole(PermissionSeeder::ROLE_USER)) {
+            return;
+        }
+
+        $this->assignRole(PermissionSeeder::ROLE_USER);
     }
 
     protected function casts(): array

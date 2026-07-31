@@ -154,7 +154,7 @@ it('excludes soft-deleted projects from index', function (): void {
     expect(collect($response->json('data'))->pluck('id')->all())->toBe([$active->id]);
 });
 
-it('returns nested tasks on show', function (): void {
+it('returns tasks_count without nested tasks on show', function (): void {
     $project = Project::factory()->for($this->user)->hasTasks(2)->create();
 
     $response = $this->getJson("/api/v1/projects/{$project->id}", $this->authHeaders);
@@ -165,9 +165,13 @@ it('returns nested tasks on show', function (): void {
         'message',
         'data' => [
             'id',
+            'name',
+            'status',
             'tasks_count',
-            'tasks' => [['id', 'title', 'status', 'priority']],
+            'created_at',
+            'updated_at',
         ],
     ]);
-    expect($response->json('data.tasks'))->toHaveCount(2);
+    expect($response->json('data.tasks_count'))->toBe(2);
+    expect($response->json('data'))->not->toHaveKey('tasks');
 });

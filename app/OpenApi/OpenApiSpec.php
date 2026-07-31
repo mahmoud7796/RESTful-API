@@ -157,7 +157,7 @@ use OpenApi\Attributes as OA;
 #[OA\Get(
     path: '/projects/{project}',
     operationId: 'projectsShow',
-    summary: 'Show a project with nested tasks',
+    summary: 'Show a project (includes tasks_count; list tasks via /projects/{project}/tasks)',
     tags: ['Projects'],
     parameters: [
         new OA\Parameter(name: 'project', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),

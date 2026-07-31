@@ -49,9 +49,9 @@ it('delegates create to the repository with expected arguments', function (): vo
     expect($result)->toBe($this->project);
 });
 
-it('delegates show to the repository loadTasks method', function (): void {
+it('delegates show to the repository loadTaskCount method', function (): void {
     $this->repository
-        ->shouldReceive('loadTasks')
+        ->shouldReceive('loadTaskCount')
         ->once()
         ->with($this->project)
         ->andReturn($this->project);
@@ -89,7 +89,7 @@ it('delegates delete to the repository', function (): void {
 it('rejects show when the project belongs to another user', function (): void {
     $foreignProject = (new Project)->forceFill(['id' => 2, 'user_id' => 2]);
 
-    $this->repository->shouldNotReceive('loadTasks');
+    $this->repository->shouldNotReceive('loadTaskCount');
 
     expect(fn () => $this->service->show($foreignProject, $this->user))
         ->toThrow(AuthorizationException::class);

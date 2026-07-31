@@ -29,6 +29,11 @@ it('registers a user and returns 201 with a token', function (): void {
 
     expect($response->json('data.token'))->toBeString()->not->toBeEmpty();
     expect(User::query()->where('email', 'jane@example.com')->exists())->toBeTrue();
+
+    $user = User::query()->where('email', 'jane@example.com')->first();
+    expect($user->hasRole('user'))->toBeTrue();
+    expect($user->can('dashboard.view'))->toBeTrue();
+    expect($user->can('projects.index'))->toBeTrue();
 });
 
 it('returns 422 when registering with a duplicate email', function (): void {

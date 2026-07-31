@@ -40,6 +40,7 @@ it('delegates register to the repository and returns a token', function (): void
         'password' => 'password123',
     ];
     $user = userWithToken('registered-token');
+    $user->shouldReceive('assignDefaultRole')->once();
 
     $this->repository
         ->shouldReceive('create')

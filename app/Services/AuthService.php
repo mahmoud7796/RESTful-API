@@ -27,6 +27,8 @@ class AuthService
             'password' => $attributes['password'],
         ]);
 
+        $user->assignDefaultRole();
+
         return [
             'user' => $user,
             'token' => $user->createToken('auth')->plainTextToken,

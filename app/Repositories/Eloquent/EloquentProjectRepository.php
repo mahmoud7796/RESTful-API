@@ -43,10 +43,9 @@ class EloquentProjectRepository implements ProjectRepositoryInterface
         return (bool) $project->delete();
     }
 
-    public function loadTasks(Project $project): Project
+    public function loadTaskCount(Project $project): Project
     {
         $project->loadCount('tasks');
-        $project->load('tasks');
 
         return $project;
     }
