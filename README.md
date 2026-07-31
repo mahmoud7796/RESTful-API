@@ -299,11 +299,17 @@ Omit `errors` when there are no field-level validation messages.
 
 ## Testing
 
+Run the suite **inside the app container** — this is the command reviewers should use:
+
 ```bash
 docker compose exec app php artisan test
 ```
 
-The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, authorization (Spatie permissions and service ownership), project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — `ProjectService`, `AuthService` — to verify delegation without a database.
+`phpunit.xml` configures Feature tests with in-memory SQLite (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`). That keeps tests fast and isolated. The app image installs `pdo_sqlite` explicitly so `php artisan test` works the same as `./vendor/bin/pest`.
+
+Do **not** run `php artisan test` on the host unless WSL/local PHP also has the SQLite PDO extension; without it, Feature tests fail with `could not find driver`.
+
+The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, authorization (Spatie permissions and service ownership), project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — `ProjectService`, `AuthService`, write-path DTOs — to verify delegation and casting without a database.
 
 ## What I Would Add With More Time
 
