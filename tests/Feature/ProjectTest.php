@@ -24,8 +24,8 @@ it('returns only the authenticated users projects on index', function (): void {
     $response = $this->getJson('/api/v1/projects', $this->authHeaders);
 
     $response->assertOk();
-    expect($response->json('data.data'))->toHaveCount(2);
-    expect(collect($response->json('data.data'))->pluck('id')->sort()->values()->all())
+    expect($response->json('data'))->toHaveCount(2);
+    expect(collect($response->json('data'))->pluck('id')->sort()->values()->all())
         ->toEqual($this->user->projects()->pluck('id')->sort()->values()->all());
 });
 
@@ -38,16 +38,12 @@ it('filters index by status and includes pagination meta', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'status',
-        'message',
-        'data' => [
-            'data' => [['id', 'name', 'description', 'status', 'tasks_count', 'created_at', 'updated_at']],
-            'links' => ['first', 'last', 'prev', 'next'],
-            'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
-        ],
+        'data' => [['id', 'name', 'description', 'status', 'tasks_count', 'created_at', 'updated_at']],
+        'links' => ['first', 'last', 'prev', 'next'],
+        'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
     ]);
-    expect($response->json('data.data'))->toHaveCount(1);
-    expect($response->json('data.data.0.status.value'))->toBe('active');
+    expect($response->json('data'))->toHaveCount(1);
+    expect($response->json('data.0.status.value'))->toBe('active');
 });
 
 it('stores a project and returns 201 with the correct user_id', function (): void {
@@ -59,22 +55,18 @@ it('stores a project and returns 201 with the correct user_id', function (): voi
 
     $response->assertCreated();
     $response->assertJsonStructure([
-        'status',
-        'message',
-        'data' => [
-            'id',
-            'name',
-            'description',
-            'status' => ['value', 'label'],
-            'created_at',
-            'updated_at',
-        ],
+        'id',
+        'name',
+        'description',
+        'status' => ['value', 'label'],
+        'created_at',
+        'updated_at',
     ]);
-    $response->assertJsonPath('data.name', 'New Project');
-    $response->assertJsonPath('data.status.value', 'active');
-    $response->assertJsonPath('data.status.label', 'Active');
+    $response->assertJsonPath('name', 'New Project');
+    $response->assertJsonPath('status.value', 'active');
+    $response->assertJsonPath('status.label', 'Active');
 
-    $project = Project::query()->find($response->json('data.id'));
+    $project = Project::query()->find($response->json('id'));
     expect($project)->not->toBeNull();
     expect($project->user_id)->toBe($this->user->id);
 });
@@ -86,7 +78,7 @@ it('returns 422 when storing with an invalid status', function (): void {
     ], $this->authHeaders);
 
     $response->assertUnprocessable();
-    $response->assertJsonStructure(['status', 'message', 'errors' => ['status']]);
+    $response->assertJsonStructure(['message', 'errors' => ['status']]);
 });
 
 it('returns 403 when showing another users project', function (): void {
@@ -95,7 +87,6 @@ it('returns 403 when showing another users project', function (): void {
     $this->getJson("/api/v1/projects/{$project->id}", $this->authHeaders)
         ->assertForbidden()
         ->assertJson([
-            'status' => false,
             'message' => 'This action is unauthorized.',
         ]);
 });
@@ -104,7 +95,6 @@ it('returns 404 when showing a non-existent project', function (): void {
     $this->getJson('/api/v1/projects/999999', $this->authHeaders)
         ->assertNotFound()
         ->assertJson([
-            'status' => false,
             'message' => 'Resource not found.',
         ]);
 });
@@ -121,9 +111,9 @@ it('updates only the provided fields', function (): void {
     ], $this->authHeaders);
 
     $response->assertOk();
-    $response->assertJsonPath('data.name', 'Updated Name');
-    $response->assertJsonPath('data.description', 'Original description');
-    $response->assertJsonPath('data.status.value', 'active');
+    $response->assertJsonPath('name', 'Updated Name');
+    $response->assertJsonPath('description', 'Original description');
+    $response->assertJsonPath('status.value', 'active');
 
     $project->refresh();
     expect($project->name)->toBe('Updated Name');
@@ -131,16 +121,11 @@ it('updates only the provided fields', function (): void {
     expect($project->status)->toBe(ProjectStatus::Active);
 });
 
-it('soft-deletes a project and returns success', function (): void {
+it('soft-deletes a project and returns 204', function (): void {
     $project = Project::factory()->for($this->user)->create();
 
     $this->deleteJson("/api/v1/projects/{$project->id}", [], $this->authHeaders)
-        ->assertOk()
-        ->assertJson([
-            'status' => true,
-            'message' => 'Project deleted successfully',
-            'data' => null,
-        ]);
+        ->assertNoContent();
 
     expect($project->fresh()->trashed())->toBeTrue();
 });
@@ -153,7 +138,7 @@ it('excludes soft-deleted projects from index', function (): void {
     $response = $this->getJson('/api/v1/projects', $this->authHeaders);
 
     $response->assertOk();
-    expect(collect($response->json('data.data'))->pluck('id')->all())->toBe([$active->id]);
+    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$active->id]);
 });
 
 it('returns nested tasks on show', function (): void {
@@ -163,11 +148,9 @@ it('returns nested tasks on show', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data' => [
-            'id',
-            'tasks_count',
-            'tasks' => [['id', 'title', 'status', 'priority']],
-        ],
+        'id',
+        'tasks_count',
+        'tasks' => [['id', 'title', 'status', 'priority']],
     ]);
-    expect($response->json('data.tasks'))->toHaveCount(2);
+    expect($response->json('tasks'))->toHaveCount(2);
 });

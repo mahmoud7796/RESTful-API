@@ -19,7 +19,9 @@ CONVENTIONS
 - All statuses and priorities are native backed enums in app/Enums/, cast on the model.
 - Every endpoint returns an API Resource (app/Http/Resources/), never a raw model or array.
 - Every write endpoint uses a dedicated Form Request in app/Http/Requests/.
-- Authorization via Policies. Never scatter where('user_id', auth()->id()) in controllers.
+- Authorization: Spatie `permission:` middleware on routes for capability checks;
+  ownership enforced in Services via `ensureOwnedBy()` / `ensureProjectOwnedBy()` /
+  `ensureTaskOwnedBy()` throwing `AuthorizationException`. Do not use Laravel Policies.
 - Route model binding everywhere. No manual findOrFail in controllers.
 - Soft deletes on projects and tasks.
 

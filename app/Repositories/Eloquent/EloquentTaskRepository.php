@@ -65,22 +65,12 @@ class EloquentTaskRepository implements TaskRepositoryInterface
             ->whereNull('projects.deleted_at')
             ->selectRaw(
                 'COUNT(*) as total,
-                SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) as todo,
-                SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) as in_progress,
                 SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) as done,
                 SUM(CASE WHEN tasks.status != ? THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN tasks.priority = ? THEN 1 ELSE 0 END) as low,
-                SUM(CASE WHEN tasks.priority = ? THEN 1 ELSE 0 END) as medium,
-                SUM(CASE WHEN tasks.priority = ? THEN 1 ELSE 0 END) as high,
                 SUM(CASE WHEN tasks.due_date IS NOT NULL AND tasks.due_date < ? AND tasks.status != ? THEN 1 ELSE 0 END) as overdue',
                 [
-                    TaskStatus::Todo->value,
-                    TaskStatus::InProgress->value,
                     TaskStatus::Done->value,
                     TaskStatus::Done->value,
-                    TaskPriority::Low->value,
-                    TaskPriority::Medium->value,
-                    TaskPriority::High->value,
                     now()->toDateString(),
                     TaskStatus::Done->value,
                 ],
@@ -89,13 +79,8 @@ class EloquentTaskRepository implements TaskRepositoryInterface
 
         return [
             'total' => (int) $result->total,
-            'todo' => (int) $result->todo,
-            'in_progress' => (int) $result->in_progress,
             'done' => (int) $result->done,
             'pending' => (int) $result->pending,
-            'low' => (int) $result->low,
-            'medium' => (int) $result->medium,
-            'high' => (int) $result->high,
             'overdue' => (int) $result->overdue,
         ];
     }

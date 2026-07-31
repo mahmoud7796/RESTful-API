@@ -85,7 +85,7 @@ use OpenApi\Attributes as OA;
     summary: 'Revoke the current token',
     tags: ['Auth'],
     responses: [
-        new OA\Response(response: 200, description: 'Logged out'),
+        new OA\Response(response: 204, description: 'Logged out'),
         new OA\Response(response: 401, description: 'Unauthenticated'),
     ],
 )]
@@ -178,7 +178,7 @@ use OpenApi\Attributes as OA;
         new OA\Parameter(name: 'project', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
     ],
     responses: [
-        new OA\Response(response: 200, description: 'Project deleted'),
+        new OA\Response(response: 204, description: 'Project deleted'),
     ],
 )]
 #[OA\Get(
@@ -236,24 +236,9 @@ use OpenApi\Attributes as OA;
         new OA\Response(response: 403, description: 'Not owned by user'),
     ],
 )]
-#[OA\Get(
-    path: '/projects/{project}/tasks/{task}',
-    operationId: 'tasksShowNested',
-    summary: 'Show a task scoped to a project',
-    tags: ['Tasks'],
-    parameters: [
-        new OA\Parameter(name: 'project', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-        new OA\Parameter(name: 'task', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-    ],
-    responses: [
-        new OA\Response(response: 200, description: 'Task details'),
-        new OA\Response(response: 404, description: 'Task does not belong to project'),
-    ],
-)]
 #[OA\Patch(
     path: '/tasks/{task}',
     operationId: 'tasksUpdate',
-    summary: 'Update a task',
     tags: ['Tasks'],
     parameters: [
         new OA\Parameter(name: 'task', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
@@ -282,7 +267,7 @@ use OpenApi\Attributes as OA;
         new OA\Parameter(name: 'task', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
     ],
     responses: [
-        new OA\Response(response: 200, description: 'Task deleted'),
+        new OA\Response(response: 204, description: 'Task deleted'),
     ],
 )]
 class OpenApiSpec {}

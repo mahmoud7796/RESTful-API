@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password'])]
@@ -22,6 +24,17 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     protected string $guard_name = 'web';
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user): void {
+            if (! Role::query()->where('name', PermissionSeeder::ROLE_USER)->where('guard_name', 'web')->exists()) {
+                return;
+            }
+
+            $user->assignRole(PermissionSeeder::ROLE_USER);
+        });
+    }
 
     protected function casts(): array
     {

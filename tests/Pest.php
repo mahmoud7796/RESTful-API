@@ -6,10 +6,10 @@ use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-uses(TestCase::class)->in('Feature', 'Unit');
+uses(TestCase::class, RefreshDatabase::class)
+    ->beforeEach(function (): void {
+        $this->seed(PermissionSeeder::class);
+    })
+    ->in('Feature');
 
-uses(RefreshDatabase::class)->in('Feature');
-
-beforeEach(function (): void {
-    $this->seed(PermissionSeeder::class);
-})->in('Feature');
+uses(TestCase::class)->in('Unit');

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Laravel REST API for managing projects and tasks with Sanctum token authentication, Spatie route permissions, and a dashboard of aggregated metrics. Built on **Laravel 13** and **PHP 8.3**, with **Pest 4** as the test runner. All endpoints live under `/api/v1` and return a unified JSON envelope via `responseSuccess()` / `responseError()`.
+A Laravel REST API for managing projects and tasks with Sanctum token authentication, Spatie route permissions, and a dashboard of aggregated metrics. Built on **Laravel 13** and **PHP 8.3**, with **Pest 4** as the test runner. All endpoints live under `/api/v1`. Success responses return API Resources directly (paginated lists include top-level `meta` and `links`); errors use `{ "message", "errors" }`.
 
 ## Quick Start (Docker)
 
@@ -68,7 +68,7 @@ php artisan l5-swagger:generate
 
 Swagger UI: [http://localhost:8000/api/documentation](http://localhost:8000/api/documentation)
 
-Click **Authorize**, paste the bearer token from login/register (`data.token` in the response), then try protected routes.
+Click **Authorize**, paste the bearer token from login/register (`token` in the response), then try protected routes.
 
 Postman collection: import `docs/postman_collection.json` (alternative to Swagger UI).
 
@@ -96,11 +96,11 @@ The dashboard needs six metrics across projects and tasks. Instead of six separa
 
 ### Authorization: Spatie permissions vs ownership
 
-**Spatie `permission:` middleware** on routes gates each action (`projects.index`, `tasks.store`, etc.). Users receive the `user` role with all permissions on register and via the seeder. **Ownership** (user A cannot mutate user B's project) is enforced in `ProjectService` / `TaskService`, not in policies or controllers.
+**Spatie `permission:` middleware** on routes gates each action (`projects.index`, `tasks.store`, etc.). Run `php artisan migrate --seed` so permissions and the `user` role exist before registering users. New users receive the `user` role automatically when it exists (`User::created` hook). **Ownership** (user A cannot mutate user B's project) is enforced in `ProjectService` / `TaskService`, not in policies or controllers.
 
-### Shallow-nested tasks with scopeBindings
+### Shallow-nested tasks
 
-Tasks are created under `/projects/{project}/tasks` but accessed at `/tasks/{task}` (shallow nesting). This keeps URLs short for common CRUD while preserving the parent context at creation time. `scopeBindings()` on the route group ensures nested routes like `/projects/{project}/tasks/{task}` return 404 when the task does not belong to the project.
+Tasks are created under `/projects/{project}/tasks` but show/update/delete use `/tasks/{task}` (shallow nesting). This keeps URLs short for common CRUD while preserving the parent context at creation time.
 
 ### Index strategy
 
@@ -122,19 +122,18 @@ Tasks are created under `/projects/{project}/tasks` but accessed at `/tasks/{tas
 |--------|------|------|-------------|
 | `POST` | `/api/v1/auth/register` | No | Register a new user; returns user + token |
 | `POST` | `/api/v1/auth/login` | No | Authenticate; returns user + token |
-| `POST` | `/api/v1/auth/logout` | Yes | Revoke the current token |
+| `POST` | `/api/v1/auth/logout` | Yes | Revoke the current token (`204 No Content`) |
 | `GET` | `/api/v1/dashboard` | Yes | Aggregated project and task metrics |
 | `GET` | `/api/v1/projects` | Yes | List projects (paginated; optional `?status=`, `?per_page=`) |
 | `POST` | `/api/v1/projects` | Yes | Create a project |
 | `GET` | `/api/v1/projects/{project}` | Yes | Show a project with nested tasks |
 | `PATCH` | `/api/v1/projects/{project}` | Yes | Update a project |
-| `DELETE` | `/api/v1/projects/{project}` | Yes | Soft-delete a project |
+| `DELETE` | `/api/v1/projects/{project}` | Yes | Soft-delete a project (`204 No Content`) |
 | `GET` | `/api/v1/projects/{project}/tasks` | Yes | List tasks (optional `?status=`, `?priority=`, `?search=`, `?per_page=`) |
 | `POST` | `/api/v1/projects/{project}/tasks` | Yes | Create a task |
 | `GET` | `/api/v1/tasks/{task}` | Yes | Show a task (shallow route) |
 | `PATCH` | `/api/v1/tasks/{task}` | Yes | Update a task (shallow route) |
-| `DELETE` | `/api/v1/tasks/{task}` | Yes | Soft-delete a task |
-| `GET` | `/api/v1/projects/{project}/tasks/{task}` | Yes | Show a task scoped to parent project |
+| `DELETE` | `/api/v1/tasks/{task}` | Yes | Soft-delete a task (`204 No Content`) |
 
 ### Auth — register
 
@@ -156,19 +155,13 @@ Content-Type: application/json
 
 ```json
 {
-  "status": true,
-  "message": "Registered successfully",
-  "data": {
-    "user": {
-      "id": 1,
-      "name": "Jane Doe",
-      "email": "jane@example.com",
-      "email_verified_at": null,
-      "created_at": "2026-07-31T12:00:00.000000Z",
-      "updated_at": "2026-07-31T12:00:00.000000Z"
-    },
-    "token": "1|abc123..."
-  }
+  "id": 1,
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "email_verified_at": null,
+  "created_at": "2026-07-31T12:00:00.000000Z",
+  "updated_at": "2026-07-31T12:00:00.000000Z",
+  "token": "1|abc123..."
 }
 ```
 
@@ -185,26 +178,22 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "status": true,
-  "message": "Tasks loaded successfully",
-  "data": {
-    "data": [
-      {
-        "id": 5,
-        "title": "Draft homepage copy",
-        "description": "Hero section first pass",
-        "priority": { "value": "high", "label": "High" },
-        "status": { "value": "in_progress", "label": "In Progress" },
-        "due_date": "2026-08-15",
-        "is_overdue": false,
-        "project_id": 1,
-        "created_at": "2026-07-31T12:00:00.000000Z",
-        "updated_at": "2026-07-31T12:00:00.000000Z"
-      }
-    ],
-    "links": { "first": "...", "last": "...", "prev": null, "next": null },
-    "meta": { "current_page": 1, "per_page": 10, "total": 1 }
-  }
+  "data": [
+    {
+      "id": 5,
+      "title": "Draft homepage copy",
+      "description": "Hero section first pass",
+      "priority": { "value": "high", "label": "High" },
+      "status": { "value": "in_progress", "label": "In Progress" },
+      "due_date": "2026-08-15",
+      "is_overdue": false,
+      "project_id": 1,
+      "created_at": "2026-07-31T12:00:00.000000Z",
+      "updated_at": "2026-07-31T12:00:00.000000Z"
+    }
+  ],
+  "links": { "first": "...", "last": "...", "prev": null, "next": null },
+  "meta": { "current_page": 1, "per_page": 10, "total": 1 }
 }
 ```
 
@@ -221,50 +210,38 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "status": true,
-  "message": "Dashboard loaded successfully",
-  "data": {
-    "total_projects": 4,
-    "active_projects": 2,
-    "total_tasks": 28,
-    "completed_tasks": 8,
-    "pending_tasks": 20,
-    "overdue_tasks": 3
-  }
+  "total_projects": 4,
+  "active_projects": 2,
+  "total_tasks": 28,
+  "completed_tasks": 8,
+  "pending_tasks": 20,
+  "overdue_tasks": 3
 }
 ```
 
 ## Error Response Format
 
-Success responses:
-
-```json
-{
-  "status": true,
-  "message": "Projects loaded successfully",
-  "data": { }
-}
-```
+Success responses return the API Resource (or paginated collection with top-level `data`, `meta`, and `links`). Auth responses include a top-level `token` alongside user fields.
 
 Error responses:
 
 ```json
 {
-  "status": false,
   "message": "Human-readable summary",
   "errors": { "field": ["Detail"] }
 }
 ```
 
-`errors` is omitted for non-validation failures.
+`errors` is `null` for non-validation failures.
 
 | Status | When |
 |--------|------|
-| `200` | Successful read, update, or delete |
+| `200` | Successful read or update |
 | `201` | Resource created |
+| `204` | Successful delete or logout (no body) |
 | `401` | Missing or invalid token |
 | `403` | Missing permission or ownership violation |
-| `404` | Resource not found (includes scope binding mismatches) |
+| `404` | Resource not found |
 | `422` | Validation failure (`errors` contains field messages) |
 | `500` | Unexpected server error |
 
@@ -274,7 +251,7 @@ Error responses:
 docker compose exec app php artisan test
 ```
 
-The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — currently `ProjectService` — to verify delegation without a database.
+The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, authorization (Spatie permissions and service ownership), project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — currently `ProjectService` — to verify delegation without a database.
 
 ## What I Would Add With More Time
 

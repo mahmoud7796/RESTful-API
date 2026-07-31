@@ -86,7 +86,6 @@ it('delegates delete to the repository', function (): void {
 
     expect($result)->toBeTrue();
 });
-
 it('rejects show when the project belongs to another user', function (): void {
     $foreignProject = (new Project)->forceFill(['id' => 2, 'user_id' => 2]);
 

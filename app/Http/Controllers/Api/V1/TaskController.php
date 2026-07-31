@@ -12,8 +12,10 @@ use App\Http\Resources\TaskResource;
 use App\Models\Project;
 use App\Models\Task;
 use App\Services\TaskService;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class TaskController extends Controller
 {
@@ -21,8 +23,8 @@ class TaskController extends Controller
 
     public function index(IndexTaskRequest $request, Project $project): JsonResponse
     {
-        return responseSuccess(
-            data: TaskResource::collection($this->taskService->list(
+        return ApiResponse::success(
+            TaskResource::collection($this->taskService->list(
                 $project,
                 $request->user(),
                 $request->status(),
@@ -30,50 +32,41 @@ class TaskController extends Controller
                 $request->search(),
                 $request->perPage(),
             )),
-            message: 'Tasks loaded successfully',
         );
     }
 
     public function store(StoreTaskRequest $request, Project $project): JsonResponse
     {
-        return responseSuccess(
-            data: new TaskResource($this->taskService->create(
+        return ApiResponse::success(
+            new TaskResource($this->taskService->create(
                 $project,
                 $request->user(),
                 $request->validatedArray(),
             )),
-            message: 'Task created successfully',
             code: 201,
         );
     }
 
     public function show(Request $request, Task $task): JsonResponse
     {
-        return responseSuccess(
-            data: new TaskResource($this->taskService->show($task, $request->user())),
-            message: 'Task loaded successfully',
+        return ApiResponse::success(
+            new TaskResource($this->taskService->show($task, $request->user())),
         );
-    }
-
-    public function showNested(Request $request, Project $project, Task $task): JsonResponse
-    {
-        return $this->show($request, $task);
     }
 
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
-        return responseSuccess(
-            data: new TaskResource($this->taskService->update(
+        return ApiResponse::success(
+            new TaskResource($this->taskService->update(
                 $task, $request->user(), $request->validatedArray(),
             )),
-            message: 'Task updated successfully',
         );
     }
 
-    public function destroy(Request $request, Task $task): JsonResponse
+    public function destroy(Request $request, Task $task): Response
     {
         $this->taskService->delete($task, $request->user());
 
-        return responseSuccess(null, 'Task deleted successfully');
+        return response()->noContent();
     }
 }

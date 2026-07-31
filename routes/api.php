@@ -20,25 +20,19 @@ Route::prefix('v1')->group(function (): void {
         Route::get('dashboard', DashboardController::class)
             ->middleware('permission:dashboard.view');
 
-        Route::apiResource('projects', ProjectController::class)->middleware([
-            'index' => 'permission:projects.index',
-            'store' => 'permission:projects.store',
-            'show' => 'permission:projects.show',
-            'update' => 'permission:projects.update',
-            'destroy' => 'permission:projects.destroy',
-        ]);
+        Route::apiResource('projects', ProjectController::class)
+            ->middlewareFor('index', 'permission:projects.index')
+            ->middlewareFor('store', 'permission:projects.store')
+            ->middlewareFor('show', 'permission:projects.show')
+            ->middlewareFor('update', 'permission:projects.update')
+            ->middlewareFor('destroy', 'permission:projects.destroy');
 
-        Route::apiResource('projects.tasks', TaskController::class)->shallow()->middleware([
-            'index' => 'permission:tasks.index',
-            'store' => 'permission:tasks.store',
-            'show' => 'permission:tasks.show',
-            'update' => 'permission:tasks.update',
-            'destroy' => 'permission:tasks.destroy',
-        ]);
-
-        Route::get('projects/{project}/tasks/{task}', [TaskController::class, 'showNested'])
-            ->middleware('permission:tasks.show')
-            ->scopeBindings()
-            ->name('projects.tasks.nested-show');
+        Route::apiResource('projects.tasks', TaskController::class)
+            ->shallow()
+            ->middlewareFor('index', 'permission:tasks.index')
+            ->middlewareFor('store', 'permission:tasks.store')
+            ->middlewareFor('show', 'permission:tasks.show')
+            ->middlewareFor('update', 'permission:tasks.update')
+            ->middlewareFor('destroy', 'permission:tasks.destroy');
     });
 });

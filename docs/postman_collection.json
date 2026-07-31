@@ -64,8 +64,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "if (json.data && json.data.token) {",
-                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('token', json.token);",
                   "}"
                 ]
               }
@@ -109,8 +109,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "if (json.data && json.data.token) {",
-                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('token', json.token);",
                   "}"
                 ]
               }
@@ -355,21 +355,6 @@
             ],
             "url": "{{base_url}}/tasks/1",
             "description": "Show a task via the shallow route. Replace 1 with a task ID you own."
-          },
-          "response": []
-        },
-        {
-          "name": "Show Task (Nested)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": "{{base_url}}/projects/1/tasks/1",
-            "description": "Show a task scoped to a parent project (scopeBindings). Returns 404 if the task does not belong to the project."
           },
           "response": []
         },

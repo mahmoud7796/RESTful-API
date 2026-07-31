@@ -1,5 +1,8 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Support\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -41,28 +44,28 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($e instanceof ValidationException) {
-                return responseError($e->getMessage(), 422, $e->errors());
+                return ApiResponse::error($e->getMessage(), 422, $e->errors());
             }
 
             if ($e instanceof AuthenticationException) {
-                return responseError('Unauthenticated.', 401);
+                return ApiResponse::error('Unauthenticated.', 401);
             }
 
             if ($e instanceof UnauthorizedException
                 || $e instanceof AuthorizationException
                 || $e instanceof AccessDeniedHttpException) {
-                return responseError('This action is unauthorized.', 403);
+                return ApiResponse::error('This action is unauthorized.', 403);
             }
 
             if ($e instanceof ModelNotFoundException || $e instanceof NotFoundHttpException) {
-                return responseError('Resource not found.', 404);
+                return ApiResponse::error('Resource not found.', 404);
             }
 
             if ($e instanceof MethodNotAllowedHttpException) {
-                return responseError('Method not allowed.', 405);
+                return ApiResponse::error('Method not allowed.', 405);
             }
 
-            return responseError(
+            return ApiResponse::error(
                 'Server Error.',
                 500,
                 config('app.debug') ? [

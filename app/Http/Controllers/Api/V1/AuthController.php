@@ -9,8 +9,10 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
+use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class AuthController extends Controller
 {
@@ -22,14 +24,10 @@ class AuthController extends Controller
     {
         $result = $this->authService->register($request->validated());
 
-        return responseSuccess(
-            data: [
-                'user' => new UserResource($result['user']),
-                'token' => $result['token'],
-            ],
-            message: 'Registered successfully',
-            code: 201,
-        );
+        return ApiResponse::success(array_merge(
+            (new UserResource($result['user']))->resolve($request),
+            ['token' => $result['token']],
+        ), code: 201);
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -39,19 +37,16 @@ class AuthController extends Controller
             $request->validated('password'),
         );
 
-        return responseSuccess(
-            data: [
-                'user' => new UserResource($result['user']),
-                'token' => $result['token'],
-            ],
-            message: 'Logged in successfully',
-        );
+        return ApiResponse::success(array_merge(
+            (new UserResource($result['user']))->resolve($request),
+            ['token' => $result['token']],
+        ));
     }
 
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request): Response
     {
         $this->authService->logout($request->user());
 
-        return responseSuccess(null, 'Logged out successfully');
+        return response()->noContent();
     }
 }
