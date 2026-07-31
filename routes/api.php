@@ -13,7 +13,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('login', [AuthController::class, 'login']);
 
-        Route::middleware('auth:sanctum')->post('logout', [AuthController::class, 'logout']);
+        Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     });
 
     Route::middleware('auth:sanctum')->scopeBindings()->group(function (): void {

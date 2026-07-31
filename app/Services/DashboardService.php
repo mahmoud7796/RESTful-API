@@ -27,8 +27,6 @@ class DashboardService
      */
     public function forUser(User $user): array
     {
-        // Two conditional-aggregation queries (one per repository) — not six separate count() calls —
-        // keep dashboard reads to a fixed cost regardless of metric count.
         $projectCounts = $this->projectRepository->countsForUser($user);
         $taskCounts = $this->taskRepository->countsForUser($user);
 
