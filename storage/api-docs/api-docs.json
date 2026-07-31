@@ -119,7 +119,7 @@
                 "summary": "Revoke the current token",
                 "operationId": "authLogout",
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": "Logged out"
                     },
                     "401": {
@@ -280,7 +280,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": "Project deleted"
                     }
                 }
@@ -513,7 +513,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": "Task deleted"
                     }
                 }
@@ -522,7 +522,6 @@
                 "tags": [
                     "Tasks"
                 ],
-                "summary": "Update a task",
                 "operationId": "tasksUpdate",
                 "parameters": [
                     {
@@ -576,41 +575,6 @@
                 "responses": {
                     "200": {
                         "description": "Task updated"
-                    }
-                }
-            }
-        },
-        "/projects/{project}/tasks/{task}": {
-            "get": {
-                "tags": [
-                    "Tasks"
-                ],
-                "summary": "Show a task scoped to a project",
-                "operationId": "tasksShowNested",
-                "parameters": [
-                    {
-                        "name": "project",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "task",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Task details"
-                    },
-                    "404": {
-                        "description": "Task does not belong to project"
                     }
                 }
             }
