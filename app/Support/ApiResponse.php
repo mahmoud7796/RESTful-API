@@ -10,43 +10,68 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 
 final class ApiResponse
 {
-    public static function success(mixed $data = null, int $code = 200): JsonResponse
-    {
-        if ($data instanceof ResourceCollection || $data instanceof JsonResource) {
-            return $data->response()->setStatusCode($code);
-        }
-
-        return response()->json(self::normalize($data), $code);
-    }
-
-    public static function error(string $message, int $code = 400, ?array $errors = null): JsonResponse
-    {
-        return response()->json([
+    public static function success(
+        mixed $data = null,
+        ?string $message = null,
+        int $code = 200,
+    ): JsonResponse {
+        $body = [
+            'success' => true,
             'message' => $message,
-            'errors' => $errors,
-        ], $code);
+        ];
+
+        if ($data instanceof ResourceCollection) {
+            $resolved = $data->response()->getData(true);
+
+            $body['data'] = $resolved['data'] ?? [];
+
+            foreach (['meta', 'links'] as $key) {
+                if (isset($resolved[$key])) {
+                    $body[$key] = $resolved[$key];
+                }
+            }
+        } elseif ($data instanceof JsonResource) {
+            $body['data'] = $data->resolve(request());
+        } else {
+            $body['data'] = self::resolveValue($data);
+        }
+
+        return response()->json($body, $code);
     }
 
-    private static function normalize(mixed $data): mixed
+    private static function resolveValue(mixed $value): mixed
     {
-        if ($data instanceof ResourceCollection) {
-            return $data->response()->getData(true);
+        if ($value instanceof JsonResource) {
+            return $value->resolve(request());
         }
 
-        if ($data instanceof JsonResource) {
-            return $data->resolve(request());
-        }
+        if (is_array($value)) {
+            $resolved = [];
 
-        if (is_array($data)) {
-            $normalized = [];
-
-            foreach ($data as $key => $value) {
-                $normalized[$key] = self::normalize($value);
+            foreach ($value as $key => $item) {
+                $resolved[$key] = self::resolveValue($item);
             }
 
-            return $normalized;
+            return $resolved;
         }
 
-        return $data;
+        return $value;
+    }
+
+    public static function error(
+        string $message,
+        int $code = 400,
+        ?array $errors = null,
+    ): JsonResponse {
+        $body = [
+            'success' => false,
+            'message' => $message,
+        ];
+
+        if ($errors !== null) {
+            $body['errors'] = $errors;
+        }
+
+        return response()->json($body, $code);
     }
 }

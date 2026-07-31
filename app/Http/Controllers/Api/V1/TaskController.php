@@ -15,7 +15,6 @@ use App\Services\TaskService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class TaskController extends Controller
 {
@@ -32,6 +31,7 @@ class TaskController extends Controller
                 $request->search(),
                 $request->perPage(),
             )),
+            'Tasks loaded successfully',
         );
     }
 
@@ -43,7 +43,8 @@ class TaskController extends Controller
                 $request->user(),
                 $request->validatedArray(),
             )),
-            code: 201,
+            'Task created successfully',
+            201,
         );
     }
 
@@ -51,6 +52,7 @@ class TaskController extends Controller
     {
         return ApiResponse::success(
             new TaskResource($this->taskService->show($task, $request->user())),
+            'Task loaded successfully',
         );
     }
 
@@ -60,13 +62,14 @@ class TaskController extends Controller
             new TaskResource($this->taskService->update(
                 $task, $request->user(), $request->validatedArray(),
             )),
+            'Task updated successfully',
         );
     }
 
-    public function destroy(Request $request, Task $task): Response
+    public function destroy(Request $request, Task $task): JsonResponse
     {
         $this->taskService->delete($task, $request->user());
 
-        return response()->noContent();
+        return ApiResponse::success(null, 'Task deleted successfully');
     }
 }

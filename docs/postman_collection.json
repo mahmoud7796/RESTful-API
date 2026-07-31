@@ -64,8 +64,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "if (json.token) {",
-                  "    pm.collectionVariables.set('token', json.token);",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
                   "}"
                 ]
               }
@@ -109,8 +109,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = pm.response.json();",
-                  "if (json.token) {",
-                  "    pm.collectionVariables.set('token', json.token);",
+                  "if (json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
                   "}"
                 ]
               }

@@ -37,12 +37,15 @@ it('returns exact dashboard metrics for the authenticated user', function (): vo
 
     $response->assertOk();
     $response->assertJson([
-        'total_projects' => 3,
-        'active_projects' => 2,
-        'total_tasks' => 10,
-        'completed_tasks' => 4,
-        'pending_tasks' => 6,
-        'overdue_tasks' => 3,
+        'success' => true,
+        'data' => [
+            'total_projects' => 3,
+            'active_projects' => 2,
+            'total_tasks' => 10,
+            'completed_tasks' => 4,
+            'pending_tasks' => 6,
+            'overdue_tasks' => 3,
+        ],
     ]);
 });
 
@@ -56,9 +59,9 @@ it('does not include another users data in dashboard totals', function (): void 
         ->getJson('/api/v1/dashboard');
 
     $response->assertOk();
-    $response->assertJsonPath('total_projects', 3);
-    $response->assertJsonPath('total_tasks', 10);
-    $response->assertJsonPath('overdue_tasks', 3);
+    $response->assertJsonPath('data.total_projects', 3);
+    $response->assertJsonPath('data.total_tasks', 10);
+    $response->assertJsonPath('data.overdue_tasks', 3);
 });
 
 it('excludes soft-deleted projects and tasks from dashboard totals', function (): void {
@@ -77,9 +80,9 @@ it('excludes soft-deleted projects and tasks from dashboard totals', function ()
         ->getJson('/api/v1/dashboard');
 
     $response->assertOk();
-    $response->assertJsonPath('total_projects', 3);
-    $response->assertJsonPath('total_tasks', 10);
-    $response->assertJsonPath('overdue_tasks', 3);
+    $response->assertJsonPath('data.total_projects', 3);
+    $response->assertJsonPath('data.total_tasks', 10);
+    $response->assertJsonPath('data.overdue_tasks', 3);
 });
 
 it('issues at most two database queries for dashboard aggregates', function (): void {

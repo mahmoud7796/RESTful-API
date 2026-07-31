@@ -27,8 +27,8 @@ it('returns 403 when a user lacks the projects.show permission', function (): vo
         'Authorization' => 'Bearer '.$token,
     ])->assertForbidden()
         ->assertJson([
+            'success' => false,
             'message' => 'This action is unauthorized.',
-            'errors' => null,
         ]);
 });
 
@@ -42,15 +42,15 @@ it('returns 403 when a user has projects.show but does not own the project', fun
         'Authorization' => 'Bearer '.$token,
     ])->assertForbidden()
         ->assertJson([
+            'success' => false,
             'message' => 'This action is unauthorized.',
-            'errors' => null,
         ]);
 });
 
 it('returns 200 when a user has projects.show and owns the project', function (): void {
     $this->getJson("/api/v1/projects/{$this->ownerProject->id}", $this->ownerHeaders)
         ->assertOk()
-        ->assertJsonPath('id', $this->ownerProject->id);
+        ->assertJsonPath('data.id', $this->ownerProject->id);
 });
 
 it('returns 403 when a user lacks the tasks.show permission', function (): void {
@@ -61,8 +61,8 @@ it('returns 403 when a user lacks the tasks.show permission', function (): void 
         'Authorization' => 'Bearer '.$token,
     ])->assertForbidden()
         ->assertJson([
+            'success' => false,
             'message' => 'This action is unauthorized.',
-            'errors' => null,
         ]);
 });
 
@@ -76,15 +76,15 @@ it('returns 403 when a user has tasks.show but does not own the task', function 
         'Authorization' => 'Bearer '.$token,
     ])->assertForbidden()
         ->assertJson([
+            'success' => false,
             'message' => 'This action is unauthorized.',
-            'errors' => null,
         ]);
 });
 
 it('returns 200 when a user has tasks.show and owns the task', function (): void {
     $this->getJson("/api/v1/tasks/{$this->ownerTask->id}", $this->ownerHeaders)
         ->assertOk()
-        ->assertJsonPath('id', $this->ownerTask->id);
+        ->assertJsonPath('data.id', $this->ownerTask->id);
 });
 
 it('assigns the user role on registration when permissions are seeded', function (): void {

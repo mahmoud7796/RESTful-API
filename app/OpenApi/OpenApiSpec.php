@@ -54,8 +54,18 @@ use OpenApi\Attributes as OA;
         ),
     ),
     responses: [
-        new OA\Response(response: 201, description: 'User registered'),
-        new OA\Response(response: 422, description: 'Validation error'),
+        new OA\Response(
+            response: 201,
+            description: 'User registered',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'success', type: 'boolean', example: true),
+                    new OA\Property(property: 'message', type: 'string', example: 'Registered successfully'),
+                    new OA\Property(property: 'data', ref: '#/components/schemas/AuthData'),
+                ],
+            ),
+        ),
+        new OA\Response(response: 422, description: 'Validation error', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorEnvelope')),
     ],
 )]
 #[OA\Post(
@@ -75,8 +85,18 @@ use OpenApi\Attributes as OA;
         ),
     ),
     responses: [
-        new OA\Response(response: 200, description: 'Authenticated'),
-        new OA\Response(response: 422, description: 'Invalid credentials'),
+        new OA\Response(
+            response: 200,
+            description: 'Authenticated',
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'success', type: 'boolean', example: true),
+                    new OA\Property(property: 'message', type: 'string', example: 'Logged in successfully'),
+                    new OA\Property(property: 'data', ref: '#/components/schemas/AuthData'),
+                ],
+            ),
+        ),
+        new OA\Response(response: 422, description: 'Invalid credentials', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorEnvelope')),
     ],
 )]
 #[OA\Post(
@@ -85,8 +105,8 @@ use OpenApi\Attributes as OA;
     summary: 'Revoke the current token',
     tags: ['Auth'],
     responses: [
-        new OA\Response(response: 204, description: 'Logged out'),
-        new OA\Response(response: 401, description: 'Unauthenticated'),
+        new OA\Response(response: 200, description: 'Logged out', content: new OA\JsonContent(ref: '#/components/schemas/ApiSuccessEnvelope')),
+        new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorEnvelope')),
     ],
 )]
 #[OA\Get(
@@ -95,9 +115,9 @@ use OpenApi\Attributes as OA;
     summary: 'Dashboard metrics for the authenticated user',
     tags: ['Dashboard'],
     responses: [
-        new OA\Response(response: 200, description: 'Dashboard totals'),
-        new OA\Response(response: 401, description: 'Unauthenticated'),
-        new OA\Response(response: 403, description: 'Missing permission'),
+        new OA\Response(response: 200, description: 'Dashboard totals', content: new OA\JsonContent(ref: '#/components/schemas/ApiSuccessEnvelope')),
+        new OA\Response(response: 401, description: 'Unauthenticated', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorEnvelope')),
+        new OA\Response(response: 403, description: 'Missing permission', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorEnvelope')),
     ],
 )]
 #[OA\Get(
@@ -110,7 +130,7 @@ use OpenApi\Attributes as OA;
         new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 100, default: 15)),
     ],
     responses: [
-        new OA\Response(response: 200, description: 'Paginated project list'),
+        new OA\Response(response: 200, description: 'Paginated project list', content: new OA\JsonContent(ref: '#/components/schemas/ApiPaginatedEnvelope')),
     ],
 )]
 #[OA\Post(
@@ -178,7 +198,7 @@ use OpenApi\Attributes as OA;
         new OA\Parameter(name: 'project', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
     ],
     responses: [
-        new OA\Response(response: 204, description: 'Project deleted'),
+        new OA\Response(response: 200, description: 'Project deleted', content: new OA\JsonContent(ref: '#/components/schemas/ApiSuccessEnvelope')),
     ],
 )]
 #[OA\Get(
@@ -267,7 +287,7 @@ use OpenApi\Attributes as OA;
         new OA\Parameter(name: 'task', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
     ],
     responses: [
-        new OA\Response(response: 204, description: 'Task deleted'),
+        new OA\Response(response: 200, description: 'Task deleted', content: new OA\JsonContent(ref: '#/components/schemas/ApiSuccessEnvelope')),
     ],
 )]
 class OpenApiSpec {}

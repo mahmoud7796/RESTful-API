@@ -14,7 +14,6 @@ use App\Services\ProjectService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class ProjectController extends Controller
 {
@@ -26,6 +25,7 @@ class ProjectController extends Controller
             ProjectResource::collection($this->projectService->list(
                 $request->user(), $request->status(), $request->perPage(),
             )),
+            'Projects loaded successfully',
         );
     }
 
@@ -35,7 +35,8 @@ class ProjectController extends Controller
             new ProjectResource($this->projectService->create(
                 $request->user(), $request->validatedArray(),
             )),
-            code: 201,
+            'Project created successfully',
+            201,
         );
     }
 
@@ -43,6 +44,7 @@ class ProjectController extends Controller
     {
         return ApiResponse::success(
             new ProjectResource($this->projectService->show($project, $request->user())),
+            'Project loaded successfully',
         );
     }
 
@@ -52,13 +54,14 @@ class ProjectController extends Controller
             new ProjectResource($this->projectService->update(
                 $project, $request->user(), $request->validatedArray(),
             )),
+            'Project updated successfully',
         );
     }
 
-    public function destroy(Request $request, Project $project): Response
+    public function destroy(Request $request, Project $project): JsonResponse
     {
         $this->projectService->delete($project, $request->user());
 
-        return response()->noContent();
+        return ApiResponse::success(null, 'Project deleted successfully');
     }
 }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Laravel REST API for managing projects and tasks with Sanctum token authentication, Spatie route permissions, and a dashboard of aggregated metrics. Built on **Laravel 13** and **PHP 8.3**, with **Pest 4** as the test runner. All endpoints live under `/api/v1`. Success responses return API Resources directly (paginated lists include top-level `meta` and `links`); errors use `{ "message", "errors" }`.
+A Laravel REST API for managing projects and tasks with Sanctum token authentication, Spatie route permissions, and a dashboard of aggregated metrics. Built on **Laravel 13** and **PHP 8.3**, with **Pest 4** as the test runner. All endpoints live under `/api/v1` and share one JSON envelope via `App\Support\ApiResponse`.
 
 ## Quick Start (Docker)
 
@@ -70,7 +70,7 @@ Swagger UI: [http://localhost:8000/api/documentation](http://localhost:8000/api/
 
 1. Run **POST /auth/login** (or register) in Swagger and copy the `token` field from the response.
 2. Click the **Authorize** button (lock icon, top right).
-3. In the **sanctum** field, paste the token **only** — do not type `Bearer`; Swagger adds it.
+3. In the **sanctum** field, paste the token from `data.token` in the login/register response — **without** the `Bearer` prefix.
 4. Click **Authorize**, then **Close**, then **Try it out** on protected routes.
 
 The generated curl may show `X-CSRF-TOKEN` in addition to `Authorization` — that is normal for the Swagger UI page. If `Authorization` is missing, you have not authorized yet.
@@ -129,18 +129,18 @@ Tasks are created under `/projects/{project}/tasks` but show/update/delete use `
 |--------|------|------|-------------|
 | `POST` | `/api/v1/auth/register` | No | Register a new user; returns user + token |
 | `POST` | `/api/v1/auth/login` | No | Authenticate; returns user + token |
-| `POST` | `/api/v1/auth/logout` | Yes | Revoke the current token (`204 No Content`) |
+| `POST` | `/api/v1/auth/logout` | Yes | Revoke the current token |
 | `GET` | `/api/v1/dashboard` | Yes | Aggregated project and task metrics |
 | `GET` | `/api/v1/projects` | Yes | List projects (paginated; optional `?status=`, `?per_page=`) |
 | `POST` | `/api/v1/projects` | Yes | Create a project |
 | `GET` | `/api/v1/projects/{project}` | Yes | Show a project with nested tasks |
 | `PATCH` | `/api/v1/projects/{project}` | Yes | Update a project |
-| `DELETE` | `/api/v1/projects/{project}` | Yes | Soft-delete a project (`204 No Content`) |
+| `DELETE` | `/api/v1/projects/{project}` | Yes | Soft-delete a project |
 | `GET` | `/api/v1/projects/{project}/tasks` | Yes | List tasks (optional `?status=`, `?priority=`, `?search=`, `?per_page=`) |
 | `POST` | `/api/v1/projects/{project}/tasks` | Yes | Create a task |
 | `GET` | `/api/v1/tasks/{task}` | Yes | Show a task (shallow route) |
 | `PATCH` | `/api/v1/tasks/{task}` | Yes | Update a task (shallow route) |
-| `DELETE` | `/api/v1/tasks/{task}` | Yes | Soft-delete a task (`204 No Content`) |
+| `DELETE` | `/api/v1/tasks/{task}` | Yes | Soft-delete a task |
 
 ### Auth — register
 
@@ -162,13 +162,18 @@ Content-Type: application/json
 
 ```json
 {
-  "id": 1,
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "email_verified_at": null,
-  "created_at": "2026-07-31T12:00:00.000000Z",
-  "updated_at": "2026-07-31T12:00:00.000000Z",
-  "token": "1|abc123..."
+  "success": true,
+  "message": "Registered successfully",
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "Jane Doe",
+      "email": "jane@example.com",
+      "created_at": "2026-07-31T12:00:00.000000Z",
+      "updated_at": "2026-07-31T12:00:00.000000Z"
+    },
+    "token": "1|abc123..."
+  }
 }
 ```
 
@@ -185,6 +190,8 @@ Authorization: Bearer {token}
 
 ```json
 {
+  "success": true,
+  "message": "Tasks loaded successfully",
   "data": [
     {
       "id": 5,
@@ -217,35 +224,71 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "total_projects": 4,
-  "active_projects": 2,
-  "total_tasks": 28,
-  "completed_tasks": 8,
-  "pending_tasks": 20,
-  "overdue_tasks": 3
+  "success": true,
+  "message": "Dashboard loaded successfully",
+  "data": {
+    "total_projects": 4,
+    "active_projects": 2,
+    "total_tasks": 28,
+    "completed_tasks": 8,
+    "pending_tasks": 20,
+    "overdue_tasks": 3
+  }
 }
 ```
 
-## Error Response Format
+## Response Format
 
-Success responses return the API Resource (or paginated collection with top-level `data`, `meta`, and `links`). Auth responses include a top-level `token` alongside user fields.
+Every endpoint returns the same top-level shape.
 
-Error responses:
+**Success (single resource):**
 
 ```json
 {
+  "success": true,
+  "message": "Project loaded successfully",
+  "data": { }
+}
+```
+
+**Success (paginated):**
+
+```json
+{
+  "success": true,
+  "message": "Projects loaded successfully",
+  "data": [ ],
+  "meta": { "current_page": 1, "per_page": 15, "total": 42 },
+  "links": { "first": "...", "last": "...", "prev": null, "next": "..." }
+}
+```
+
+**Success (delete / logout):**
+
+```json
+{
+  "success": true,
+  "message": "Project deleted successfully",
+  "data": null
+}
+```
+
+**Error:**
+
+```json
+{
+  "success": false,
   "message": "Human-readable summary",
   "errors": { "field": ["Detail"] }
 }
 ```
 
-`errors` is `null` for non-validation failures.
+Omit `errors` when there are no field-level validation messages.
 
 | Status | When |
 |--------|------|
-| `200` | Successful read or update |
+| `200` | Successful read, update, delete, or logout |
 | `201` | Resource created |
-| `204` | Successful delete or logout (no body) |
 | `401` | Missing or invalid token |
 | `403` | Missing permission or ownership violation |
 | `404` | Resource not found |

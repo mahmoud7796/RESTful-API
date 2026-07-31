@@ -27,8 +27,14 @@ CONVENTIONS
 
 API DESIGN
 - All routes under /api/v1/.
-- Error envelope, always: {"message": string, "errors": object|null}
-- Status codes: 200 ok, 201 created, 204 no content on delete, 401, 403, 404, 422.
+- Every response uses App\Support\ApiResponse and the same top-level envelope.
+- Success (single resource): {"success": true, "message": string|null, "data": object|null}
+- Success (paginated): {"success": true, "message": string|null, "data": array, "meta": object, "links": object}
+  meta and links sit at the top level beside data, never nested inside it.
+- Success (delete/logout): {"success": true, "message": string, "data": null} with HTTP 200.
+- Error: {"success": false, "message": string, "errors": object|null}
+  Omit errors when there are no field-level validation messages.
+- Status codes: 200 ok/read/update/delete/logout, 201 created, 401, 403, 404, 422.
 - Paginated lists, default 15 per page, ?per_page= overridable with a max cap of 100.
 
 TESTING — PEST ONLY

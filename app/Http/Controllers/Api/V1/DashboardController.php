@@ -19,6 +19,7 @@ class DashboardController extends Controller
     {
         return ApiResponse::success(
             new DashboardResource($this->dashboardService->forUser($request->user())),
+            'Dashboard loaded successfully',
         );
     }
 }

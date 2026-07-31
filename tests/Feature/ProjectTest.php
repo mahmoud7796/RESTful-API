@@ -38,6 +38,8 @@ it('filters index by status and includes pagination meta', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
+        'success',
+        'message',
         'data' => [['id', 'name', 'description', 'status', 'tasks_count', 'created_at', 'updated_at']],
         'links' => ['first', 'last', 'prev', 'next'],
         'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
@@ -55,18 +57,22 @@ it('stores a project and returns 201 with the correct user_id', function (): voi
 
     $response->assertCreated();
     $response->assertJsonStructure([
-        'id',
-        'name',
-        'description',
-        'status' => ['value', 'label'],
-        'created_at',
-        'updated_at',
+        'success',
+        'message',
+        'data' => [
+            'id',
+            'name',
+            'description',
+            'status' => ['value', 'label'],
+            'created_at',
+            'updated_at',
+        ],
     ]);
-    $response->assertJsonPath('name', 'New Project');
-    $response->assertJsonPath('status.value', 'active');
-    $response->assertJsonPath('status.label', 'Active');
+    $response->assertJsonPath('data.name', 'New Project');
+    $response->assertJsonPath('data.status.value', 'active');
+    $response->assertJsonPath('data.status.label', 'Active');
 
-    $project = Project::query()->find($response->json('id'));
+    $project = Project::query()->find($response->json('data.id'));
     expect($project)->not->toBeNull();
     expect($project->user_id)->toBe($this->user->id);
 });
@@ -78,7 +84,7 @@ it('returns 422 when storing with an invalid status', function (): void {
     ], $this->authHeaders);
 
     $response->assertUnprocessable();
-    $response->assertJsonStructure(['message', 'errors' => ['status']]);
+    $response->assertJsonStructure(['success', 'message', 'errors' => ['status']]);
 });
 
 it('returns 403 when showing another users project', function (): void {
@@ -87,6 +93,7 @@ it('returns 403 when showing another users project', function (): void {
     $this->getJson("/api/v1/projects/{$project->id}", $this->authHeaders)
         ->assertForbidden()
         ->assertJson([
+            'success' => false,
             'message' => 'This action is unauthorized.',
         ]);
 });
@@ -95,6 +102,7 @@ it('returns 404 when showing a non-existent project', function (): void {
     $this->getJson('/api/v1/projects/999999', $this->authHeaders)
         ->assertNotFound()
         ->assertJson([
+            'success' => false,
             'message' => 'Resource not found.',
         ]);
 });
@@ -111,9 +119,9 @@ it('updates only the provided fields', function (): void {
     ], $this->authHeaders);
 
     $response->assertOk();
-    $response->assertJsonPath('name', 'Updated Name');
-    $response->assertJsonPath('description', 'Original description');
-    $response->assertJsonPath('status.value', 'active');
+    $response->assertJsonPath('data.name', 'Updated Name');
+    $response->assertJsonPath('data.description', 'Original description');
+    $response->assertJsonPath('data.status.value', 'active');
 
     $project->refresh();
     expect($project->name)->toBe('Updated Name');
@@ -121,11 +129,16 @@ it('updates only the provided fields', function (): void {
     expect($project->status)->toBe(ProjectStatus::Active);
 });
 
-it('soft-deletes a project and returns 204', function (): void {
+it('soft-deletes a project and returns the standard envelope', function (): void {
     $project = Project::factory()->for($this->user)->create();
 
     $this->deleteJson("/api/v1/projects/{$project->id}", [], $this->authHeaders)
-        ->assertNoContent();
+        ->assertOk()
+        ->assertJson([
+            'success' => true,
+            'message' => 'Project deleted successfully',
+            'data' => null,
+        ]);
 
     expect($project->fresh()->trashed())->toBeTrue();
 });
@@ -148,9 +161,13 @@ it('returns nested tasks on show', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'id',
-        'tasks_count',
-        'tasks' => [['id', 'title', 'status', 'priority']],
+        'success',
+        'message',
+        'data' => [
+            'id',
+            'tasks_count',
+            'tasks' => [['id', 'title', 'status', 'priority']],
+        ],
     ]);
-    expect($response->json('tasks'))->toHaveCount(2);
+    expect($response->json('data.tasks'))->toHaveCount(2);
 });

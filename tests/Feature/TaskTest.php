@@ -106,6 +106,7 @@ it('returns 403 when creating a task in another users project', function (): voi
 
     $response->assertForbidden();
     $response->assertJson([
+        'success' => false,
         'message' => 'This action is unauthorized.',
     ]);
 });
@@ -116,6 +117,7 @@ it('returns 403 when showing another users task via the shallow route', function
     $this->getJson("/api/v1/tasks/{$task->id}", $this->authHeaders)
         ->assertForbidden()
         ->assertJson([
+            'success' => false,
             'message' => 'This action is unauthorized.',
         ]);
 });
@@ -130,6 +132,8 @@ it('returns correct pagination meta when per_page is set', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
+        'success',
+        'message',
         'data',
         'links' => ['first', 'last', 'prev', 'next'],
         'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
@@ -160,7 +164,7 @@ it('reports is_overdue true for past due dates when status is not done', functio
     $response = $this->getJson("/api/v1/tasks/{$task->id}", $this->authHeaders);
 
     $response->assertOk();
-    expect($response->json('is_overdue'))->toBeTrue();
+    expect($response->json('data.is_overdue'))->toBeTrue();
 });
 
 it('reports is_overdue false when status is done even with a past due date', function (): void {
@@ -172,5 +176,5 @@ it('reports is_overdue false when status is done even with a past due date', fun
     $response = $this->getJson("/api/v1/tasks/{$task->id}", $this->authHeaders);
 
     $response->assertOk();
-    expect($response->json('is_overdue'))->toBeFalse();
+    expect($response->json('data.is_overdue'))->toBeFalse();
 });
