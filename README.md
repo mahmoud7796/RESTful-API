@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Laravel REST API for managing projects and tasks with token-based authentication, policy-driven authorization, and a dashboard of aggregated metrics. Built on **Laravel 13** and **PHP 8.3**, with **Pest 4** as the test runner. All endpoints live under `/api/v1` and return JSON via API Resources.
+A Laravel REST API for managing projects and tasks with Sanctum token authentication, Spatie route permissions, and a dashboard of aggregated metrics. Built on **Laravel 13** and **PHP 8.3**, with **Pest 4** as the test runner. All endpoints live under `/api/v1` and return a unified JSON envelope via `responseSuccess()` / `responseError()`.
 
 ## Quick Start (Docker)
 
@@ -16,6 +16,7 @@ docker compose up -d --build
 docker compose exec app composer install
 docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate --seed
+docker compose exec app php artisan l5-swagger:generate
 ```
 
 The API is available at `http://localhost:8000/api/v1`.
@@ -39,11 +40,12 @@ docker compose exec app php artisan test
 Requires PHP 8.3+, Composer, MySQL 8, and Redis (used for cache and queues).
 
 ```bash
+composer install
 cp .env.example .env
 # Set DB_HOST=127.0.0.1, REDIS_HOST=127.0.0.1, and matching credentials
-composer install
 php artisan key:generate
 php artisan migrate --seed
+php artisan l5-swagger:generate
 php artisan serve
 ```
 
@@ -53,6 +55,22 @@ Run a queue worker and the scheduler in separate terminals for overdue notificat
 php artisan queue:work
 php artisan schedule:work
 ```
+
+If `php artisan migrate` fails with `Class "L5Swagger\Generator" not found`, run `composer install` first — the Swagger package must be present in `vendor/` before any Artisan command loads config.
+
+## API Documentation (Swagger)
+
+OpenAPI 3 spec lives in `app/OpenApi/OpenApiSpec.php`. Regenerate after changing endpoints:
+
+```bash
+php artisan l5-swagger:generate
+```
+
+Swagger UI: [http://localhost:8000/api/documentation](http://localhost:8000/api/documentation)
+
+Click **Authorize**, paste the bearer token from login/register (`data.token` in the response), then try protected routes.
+
+Postman collection: import `docs/postman_collection.json` (alternative to Swagger UI).
 
 ## Architecture Decisions
 
@@ -261,7 +279,6 @@ The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real
 ## What I Would Add With More Time
 
 - A `UserRepository` to bring auth in line with the repository layering used elsewhere.
-- OpenAPI documentation wired to the existing `l5-swagger` package.
 - Unit tests for `TaskService` and `DashboardService`.
 - CI pipeline (Pint, Pest, static analysis) on every push.
 - Rate limiting on auth endpoints and API-wide throttling.

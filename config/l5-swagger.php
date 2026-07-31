@@ -1,15 +1,11 @@
 <?php
 
-use L5Swagger\CustomGeneratorInterface;
-use L5Swagger\Generator;
-use OpenApi\scan;
-
 return [
     'default' => 'default',
     'documentations' => [
         'default' => [
             'api' => [
-                'title' => 'L5 Swagger UI',
+                'title' => 'Task Management API',
             ],
 
             'routes' => [
@@ -48,7 +44,7 @@ return [
                  * Absolute paths to directory containing the swagger annotations are stored.
                  */
                 'annotations' => [
-                    base_path('app'),
+                    base_path('app/OpenApi'),
                 ],
             ],
         ],
@@ -181,7 +177,7 @@ return [
              * Allows to generate specs either for OpenAPI 3.0.0 or OpenAPI 3.1.0.
              * By default the spec will be in version 3.0.0
              */
-            'open_api_spec_version' => env('L5_SWAGGER_OPEN_API_SPEC_VERSION', Generator::OPEN_API_DEFAULT_SPEC_VERSION),
+            'open_api_spec_version' => env('L5_SWAGGER_OPEN_API_SPEC_VERSION', '3.0.0'),
         ],
 
         /*
