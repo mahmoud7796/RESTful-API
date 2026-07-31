@@ -1,58 +1,248 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Task Management API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Overview
 
-## About Laravel
+A Laravel REST API for managing projects and tasks with token-based authentication, policy-driven authorization, and a dashboard of aggregated metrics. Built on **Laravel 13** and **PHP 8.3**, with **Pest 4** as the test runner. All endpoints live under `/api/v1` and return JSON via API Resources.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Quick Start (Docker)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Keep the project inside the **WSL filesystem** (e.g. `/home/you/...`), not on a Windows-mounted drive (`/mnt/c/...`). Bind mounts across the Windows/WSL boundary are slow and can cause permission issues with Composer and PHP.
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone <repository-url> task-management-api
+cd task-management-api
+cp .env.example .env
+docker compose up -d --build
+docker compose exec app composer install
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate --seed
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The API is available at `http://localhost:8000/api/v1`.
 
-## Contributing
+**Demo credentials** (created by the seeder):
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Email | Password |
+|-------|----------|
+| `demo@example.com` | `password` |
 
-## Code of Conduct
+Import `docs/postman_collection.json` into Postman and run **Login** to populate the bearer token automatically.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Run the test suite:
 
-## Security Vulnerabilities
+```bash
+docker compose exec app php artisan test
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Manual Setup (without Docker)
 
-## License
+Requires PHP 8.3+, Composer, MySQL 8, and Redis (used for cache and queues).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+cp .env.example .env
+# Set DB_HOST=127.0.0.1, REDIS_HOST=127.0.0.1, and matching credentials
+composer install
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+
+Run a queue worker and the scheduler in separate terminals for overdue notifications:
+
+```bash
+php artisan queue:work
+php artisan schedule:work
+```
+
+## Architecture Decisions
+
+### Controller → Service → Repository layering
+
+Controllers resolve Form Requests, call a Service, and return an API Resource — nothing else. Services hold business logic and depend on repository **interfaces**, never on Eloquent directly. Repositories handle persistence only: queries, creates, updates, and deletes. Each layer has a single job; crossing boundaries (e.g. query building in a controller, or domain rules in a repository) is avoided.
+
+### Repositories return models and paginators, never query builders
+
+Returning an Eloquent `Builder` leaks persistence concerns to callers and makes it impossible to swap implementations or mock cleanly. Repository methods terminate queries and return concrete results: a `Model`, a `Collection`, a `LengthAwarePaginator`, or a `LazyCollection`.
+
+### Unit-testing services with mocked repositories
+
+Because services type-hint `ProjectRepositoryInterface` and `TaskRepositoryInterface`, unit tests inject Mockery doubles and assert delegation without touching the database. Feature tests hit real HTTP routes with `RefreshDatabase` for end-to-end coverage.
+
+### Application enums over MySQL ENUM columns
+
+Status and priority are backed PHP enums (`ProjectStatus`, `TaskStatus`, `TaskPriority`) stored as `VARCHAR` columns. This keeps migrations simple, avoids painful ENUM alterations, allows enum methods like `label()`, and lets validation use `Rule::enum()` without database coupling.
+
+### Dashboard conditional aggregation (2 queries, not 6)
+
+The dashboard needs six metrics across projects and tasks. Instead of six separate `count()` calls, each repository runs one `SELECT` with conditional `SUM(CASE WHEN …)` aggregation. `DashboardService` composes the two result sets. Query cost stays fixed regardless of how many metrics are displayed.
+
+### Authorization: Policies vs query scopes
+
+**Policies** answer "may this user act on this specific model?" — ownership checks on `view`, `update`, and `delete`. **Query scopes** (`ownedBy`, `withStatus`) answer "which rows belong in this list?" — applied in repositories so index endpoints never return another user's data. Policies gate individual resources; scopes constrain collections.
+
+### Shallow-nested tasks with scopeBindings
+
+Tasks are created under `/projects/{project}/tasks` but accessed at `/tasks/{task}` (shallow nesting). This keeps URLs short for common CRUD while preserving the parent context at creation time. `scopeBindings()` on the route group ensures nested routes like `/projects/{project}/tasks/{task}` return 404 when the task does not belong to the project.
+
+### Index strategy
+
+| Index | Table | Serves |
+|-------|-------|--------|
+| `(user_id, status)` | `projects` | Paginated project list filtered by status for the authenticated user |
+| `deleted_at` | `projects`, `tasks` | Efficient exclusion of soft-deleted rows |
+| `(project_id, status)` | `tasks` | Task list filtered by status within a project |
+| `(project_id, priority)` | `tasks` | Task list filtered by priority within a project |
+| `due_date` | `tasks` | Overdue detection in the dashboard aggregate and the notification job |
+
+### Overdue notification idempotency
+
+`NotifyOverdueTasksJob` runs hourly and processes overdue tasks in chunks. After notifying the project owner, it stamps `overdue_notified_at` on the task (via `forceFill`, since the column is not mass-assignable). A re-run skips tasks that already have a timestamp, preventing duplicate notifications without external deduplication infrastructure.
+
+## API Reference
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/v1/auth/register` | No | Register a new user; returns user + token |
+| `POST` | `/api/v1/auth/login` | No | Authenticate; returns user + token |
+| `POST` | `/api/v1/auth/logout` | Yes | Revoke the current token |
+| `GET` | `/api/v1/dashboard` | Yes | Aggregated project and task metrics |
+| `GET` | `/api/v1/projects` | Yes | List projects (paginated; optional `?status=`, `?per_page=`) |
+| `POST` | `/api/v1/projects` | Yes | Create a project |
+| `GET` | `/api/v1/projects/{project}` | Yes | Show a project with nested tasks |
+| `PATCH` | `/api/v1/projects/{project}` | Yes | Update a project |
+| `DELETE` | `/api/v1/projects/{project}` | Yes | Soft-delete a project |
+| `GET` | `/api/v1/projects/{project}/tasks` | Yes | List tasks (optional `?status=`, `?priority=`, `?search=`, `?per_page=`) |
+| `POST` | `/api/v1/projects/{project}/tasks` | Yes | Create a task |
+| `GET` | `/api/v1/tasks/{task}` | Yes | Show a task (shallow route) |
+| `PATCH` | `/api/v1/tasks/{task}` | Yes | Update a task (shallow route) |
+| `DELETE` | `/api/v1/tasks/{task}` | Yes | Soft-delete a task |
+| `GET` | `/api/v1/projects/{project}/tasks/{task}` | Yes | Show a task scoped to parent project |
+
+### Auth — register
+
+**Request**
+
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+```
+
+**Response** `201 Created`
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "email_verified_at": null,
+    "created_at": "2026-07-31T12:00:00.000000Z",
+    "updated_at": "2026-07-31T12:00:00.000000Z"
+  },
+  "token": "1|abc123..."
+}
+```
+
+### Task filtering
+
+**Request**
+
+```http
+GET /api/v1/projects/1/tasks?status=in_progress&priority=high&search=homepage&per_page=10
+Authorization: Bearer {token}
+```
+
+**Response** `200 OK`
+
+```json
+{
+  "data": [
+    {
+      "id": 5,
+      "title": "Draft homepage copy",
+      "description": "Hero section first pass",
+      "priority": { "value": "high", "label": "High" },
+      "status": { "value": "in_progress", "label": "In Progress" },
+      "due_date": "2026-08-15",
+      "is_overdue": false,
+      "project_id": 1,
+      "created_at": "2026-07-31T12:00:00.000000Z",
+      "updated_at": "2026-07-31T12:00:00.000000Z"
+    }
+  ],
+  "links": { "first": "...", "last": "...", "prev": null, "next": null },
+  "meta": { "current_page": 1, "per_page": 10, "total": 1 }
+}
+```
+
+### Dashboard
+
+**Request**
+
+```http
+GET /api/v1/dashboard
+Authorization: Bearer {token}
+```
+
+**Response** `200 OK`
+
+```json
+{
+  "data": {
+    "total_projects": 4,
+    "active_projects": 2,
+    "total_tasks": 28,
+    "completed_tasks": 8,
+    "pending_tasks": 20,
+    "overdue_tasks": 3
+  }
+}
+```
+
+## Error Response Format
+
+All API errors use a consistent envelope:
+
+```json
+{
+  "message": "Human-readable summary",
+  "errors": { "field": ["Detail"] }
+}
+```
+
+`errors` is `null` for non-validation failures.
+
+| Status | When |
+|--------|------|
+| `200` | Successful read or update |
+| `201` | Resource created |
+| `204` | Resource deleted (empty body) |
+| `401` | Missing or invalid token |
+| `403` | Authenticated but not authorized |
+| `404` | Resource not found (includes scope binding mismatches) |
+| `422` | Validation failure (`errors` contains field messages) |
+| `500` | Unexpected server error |
+
+## Testing
+
+```bash
+docker compose exec app php artisan test
+```
+
+The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — currently `ProjectService` — to verify delegation without a database.
+
+## What I Would Add With More Time
+
+- A `UserRepository` to bring auth in line with the repository layering used elsewhere.
+- OpenAPI documentation wired to the existing `l5-swagger` package.
+- Unit tests for `TaskService` and `DashboardService`.
+- CI pipeline (Pint, Pest, static analysis) on every push.
+- Rate limiting on auth endpoints and API-wide throttling.
+- Production mail configuration and notification channel tests beyond `Notification::fake()`.
