@@ -35,4 +35,6 @@ interface TaskRepositoryInterface
     public function countsForUser(User $user): array;
 
     public function overdueNotYetNotified(int $chunkSize): LazyCollection;
+
+    public function markOverdueNotified(Task $task): Task;
 }

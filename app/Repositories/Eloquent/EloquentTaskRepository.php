@@ -68,6 +68,7 @@ class EloquentTaskRepository implements TaskRepositoryInterface
                 SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) as todo,
                 SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) as in_progress,
                 SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN tasks.status != ? THEN 1 ELSE 0 END) as pending,
                 SUM(CASE WHEN tasks.priority = ? THEN 1 ELSE 0 END) as low,
                 SUM(CASE WHEN tasks.priority = ? THEN 1 ELSE 0 END) as medium,
                 SUM(CASE WHEN tasks.priority = ? THEN 1 ELSE 0 END) as high,
@@ -75,6 +76,7 @@ class EloquentTaskRepository implements TaskRepositoryInterface
                 [
                     TaskStatus::Todo->value,
                     TaskStatus::InProgress->value,
+                    TaskStatus::Done->value,
                     TaskStatus::Done->value,
                     TaskPriority::Low->value,
                     TaskPriority::Medium->value,
@@ -90,6 +92,7 @@ class EloquentTaskRepository implements TaskRepositoryInterface
             'todo' => (int) $result->todo,
             'in_progress' => (int) $result->in_progress,
             'done' => (int) $result->done,
+            'pending' => (int) $result->pending,
             'low' => (int) $result->low,
             'medium' => (int) $result->medium,
             'high' => (int) $result->high,
@@ -102,6 +105,14 @@ class EloquentTaskRepository implements TaskRepositoryInterface
         return $this->task->newQuery()
             ->overdue()
             ->whereNull('overdue_notified_at')
+            ->with('project.user')
             ->lazy($chunkSize);
+    }
+
+    public function markOverdueNotified(Task $task): Task
+    {
+        $task->forceFill(['overdue_notified_at' => now()])->save();
+
+        return $task->refresh();
     }
 }

@@ -33,6 +33,7 @@ class Task extends Model
             'status' => TaskStatus::class,
             'priority' => TaskPriority::class,
             'due_date' => 'date',
+            'overdue_notified_at' => 'datetime',
         ];
     }
 
