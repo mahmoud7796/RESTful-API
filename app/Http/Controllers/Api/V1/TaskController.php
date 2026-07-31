@@ -41,7 +41,7 @@ class TaskController extends Controller
             new TaskResource($this->taskService->create(
                 $project,
                 $request->user(),
-                $request->validatedArray(),
+                $request->toData(),
             )),
             'Task created successfully',
             201,
@@ -60,7 +60,7 @@ class TaskController extends Controller
     {
         return ApiResponse::success(
             new TaskResource($this->taskService->update(
-                $task, $request->user(), $request->validatedArray(),
+                $task, $request->user(), $request->toData(),
             )),
             'Task updated successfully',
         );

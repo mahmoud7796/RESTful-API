@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\Contracts;
 
+use App\DTOs\ProjectData;
 use App\Enums\ProjectStatus;
 use App\Models\Project;
 use App\Models\User;
@@ -17,9 +18,9 @@ interface ProjectRepositoryInterface
 {
     public function paginateForUser(User $user, ?ProjectStatus $status, int $perPage): LengthAwarePaginator;
 
-    public function create(User $user, array $attributes): Project;
+    public function create(User $user, ProjectData $data): Project;
 
-    public function update(Project $project, array $attributes): Project;
+    public function update(Project $project, ProjectData $data): Project;
 
     public function delete(Project $project): bool;
 

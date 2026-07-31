@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\DTOs\ProjectData;
 use App\Enums\ProjectStatus;
 use App\Models\Project;
 use App\Models\User;
@@ -36,15 +37,23 @@ it('delegates list to the repository with expected arguments', function (): void
 });
 
 it('delegates create to the repository with expected arguments', function (): void {
-    $attributes = ['name' => 'Test', 'description' => null, 'status' => ProjectStatus::Active];
+    $data = ProjectData::from([
+        'name' => 'Test',
+        'description' => null,
+        'status' => 'active',
+    ]);
 
     $this->repository
         ->shouldReceive('create')
         ->once()
-        ->with($this->user, $attributes)
+        ->with($this->user, Mockery::on(function (ProjectData $passed) use ($data): bool {
+            return $passed->name === $data->name
+                && $passed->description === null
+                && $passed->status === ProjectStatus::Active;
+        }))
         ->andReturn($this->project);
 
-    $result = $this->service->create($this->user, $attributes);
+    $result = $this->service->create($this->user, $data);
 
     expect($result)->toBe($this->project);
 });
@@ -62,15 +71,15 @@ it('delegates show to the repository loadTaskCount method', function (): void {
 });
 
 it('delegates update to the repository with expected arguments', function (): void {
-    $attributes = ['name' => 'Updated'];
+    $data = ProjectData::from(['name' => 'Updated']);
 
     $this->repository
         ->shouldReceive('update')
         ->once()
-        ->with($this->project, $attributes)
+        ->with($this->project, Mockery::on(fn (ProjectData $passed): bool => $passed->name === 'Updated'))
         ->andReturn($this->project);
 
-    $result = $this->service->update($this->project, $this->user, $attributes);
+    $result = $this->service->update($this->project, $this->user, $data);
 
     expect($result)->toBe($this->project);
 });
@@ -86,6 +95,7 @@ it('delegates delete to the repository', function (): void {
 
     expect($result)->toBeTrue();
 });
+
 it('rejects show when the project belongs to another user', function (): void {
     $foreignProject = (new Project)->forceFill(['id' => 2, 'user_id' => 2]);
 

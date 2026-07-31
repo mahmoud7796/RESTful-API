@@ -33,7 +33,7 @@ class ProjectController extends Controller
     {
         return ApiResponse::success(
             new ProjectResource($this->projectService->create(
-                $request->user(), $request->validatedArray(),
+                $request->user(), $request->toData(),
             )),
             'Project created successfully',
             201,
@@ -52,7 +52,7 @@ class ProjectController extends Controller
     {
         return ApiResponse::success(
             new ProjectResource($this->projectService->update(
-                $project, $request->user(), $request->validatedArray(),
+                $project, $request->user(), $request->toData(),
             )),
             'Project updated successfully',
         );

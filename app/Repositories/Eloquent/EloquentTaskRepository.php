@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\Eloquent;
 
+use App\DTOs\TaskData;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use App\Models\Project;
@@ -42,14 +43,14 @@ class EloquentTaskRepository implements TaskRepositoryInterface
             ->paginate($perPage);
     }
 
-    public function create(Project $project, array $attributes): Task
+    public function create(Project $project, TaskData $data): Task
     {
-        return $project->tasks()->create($attributes);
+        return $project->tasks()->create($data->toArray());
     }
 
-    public function update(Task $task, array $attributes): Task
+    public function update(Task $task, TaskData $data): Task
     {
-        $task->update($attributes);
+        $task->update($data->toArray());
 
         return $task->refresh();
     }

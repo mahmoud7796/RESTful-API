@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DTOs\TaskData;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use App\Models\Project;
@@ -38,11 +39,11 @@ class TaskService
         );
     }
 
-    public function create(Project $project, User $user, array $attributes): Task
+    public function create(Project $project, User $user, TaskData $data): Task
     {
         $this->ensureProjectOwnedBy($project, $user);
 
-        return $this->taskRepository->create($project, $attributes);
+        return $this->taskRepository->create($project, $data);
     }
 
     public function show(Task $task, User $user): Task
@@ -52,11 +53,11 @@ class TaskService
         return $task;
     }
 
-    public function update(Task $task, User $user, array $attributes): Task
+    public function update(Task $task, User $user, TaskData $data): Task
     {
         $this->ensureTaskOwnedBy($task, $user);
 
-        return $this->taskRepository->update($task, $attributes);
+        return $this->taskRepository->update($task, $data);
     }
 
     public function delete(Task $task, User $user): bool

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Task;
 
+use App\DTOs\TaskData;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use Illuminate\Foundation\Http\FormRequest;
@@ -27,8 +28,8 @@ class UpdateTaskRequest extends FormRequest
         ];
     }
 
-    public function validatedArray(): array
+    public function toData(): TaskData
     {
-        return $this->safe()->only(['title', 'description', 'priority', 'status', 'due_date']);
+        return TaskData::from($this->safe()->only(['title', 'description', 'priority', 'status', 'due_date']));
     }
 }

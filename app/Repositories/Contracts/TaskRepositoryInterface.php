@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\Contracts;
 
+use App\DTOs\TaskData;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use App\Models\Project;
@@ -26,9 +27,9 @@ interface TaskRepositoryInterface
         int $perPage,
     ): LengthAwarePaginator;
 
-    public function create(Project $project, array $attributes): Task;
+    public function create(Project $project, TaskData $data): Task;
 
-    public function update(Task $task, array $attributes): Task;
+    public function update(Task $task, TaskData $data): Task;
 
     public function delete(Task $task): bool;
 

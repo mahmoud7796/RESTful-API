@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\DTOs\ProjectData;
 use App\Enums\ProjectStatus;
 use App\Models\Project;
 use App\Models\User;
@@ -22,9 +23,9 @@ class ProjectService
         return $this->projectRepository->paginateForUser($user, $status, $perPage);
     }
 
-    public function create(User $user, array $attributes): Project
+    public function create(User $user, ProjectData $data): Project
     {
-        return $this->projectRepository->create($user, $attributes);
+        return $this->projectRepository->create($user, $data);
     }
 
     public function show(Project $project, User $user): Project
@@ -34,11 +35,11 @@ class ProjectService
         return $this->projectRepository->loadTaskCount($project);
     }
 
-    public function update(Project $project, User $user, array $attributes): Project
+    public function update(Project $project, User $user, ProjectData $data): Project
     {
         $this->ensureOwnedBy($project, $user);
 
-        return $this->projectRepository->update($project, $attributes);
+        return $this->projectRepository->update($project, $data);
     }
 
     public function delete(Project $project, User $user): bool

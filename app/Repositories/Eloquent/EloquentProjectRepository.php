@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\Eloquent;
 
+use App\DTOs\ProjectData;
 use App\Enums\ProjectStatus;
 use App\Models\Project;
 use App\Models\User;
@@ -26,14 +27,14 @@ class EloquentProjectRepository implements ProjectRepositoryInterface
             ->paginate($perPage);
     }
 
-    public function create(User $user, array $attributes): Project
+    public function create(User $user, ProjectData $data): Project
     {
-        return $user->projects()->create($attributes);
+        return $user->projects()->create($data->toArray());
     }
 
-    public function update(Project $project, array $attributes): Project
+    public function update(Project $project, ProjectData $data): Project
     {
-        $project->update($attributes);
+        $project->update($data->toArray());
 
         return $project->refresh();
     }

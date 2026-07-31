@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Project;
 
+use App\DTOs\ProjectData;
 use App\Enums\ProjectStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,8 +25,8 @@ class UpdateProjectRequest extends FormRequest
         ];
     }
 
-    public function validatedArray(): array
+    public function toData(): ProjectData
     {
-        return $this->safe()->only(['name', 'description', 'status']);
+        return ProjectData::from($this->safe()->only(['name', 'description', 'status']));
     }
 }
