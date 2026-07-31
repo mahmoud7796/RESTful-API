@@ -335,7 +335,7 @@
                 "tags": [
                     "Projects"
                 ],
-                "summary": "Show a project with nested tasks",
+                "summary": "Show a project (includes tasks_count; list tasks via /projects/{project}/tasks)",
                 "operationId": "projectsShow",
                 "parameters": [
                     {
