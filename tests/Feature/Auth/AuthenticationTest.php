@@ -15,20 +15,25 @@ it('registers a user and returns 201 with a token', function (): void {
 
     $response->assertCreated();
     $response->assertJsonStructure([
+        'status',
+        'message',
         'data' => [
-            'id',
-            'name',
-            'email',
-            'email_verified_at',
-            'created_at',
-            'updated_at',
+            'user' => [
+                'id',
+                'name',
+                'email',
+                'email_verified_at',
+                'created_at',
+                'updated_at',
+            ],
+            'token',
         ],
-        'token',
     ]);
-    $response->assertJsonPath('data.name', 'Jane Doe');
-    $response->assertJsonPath('data.email', 'jane@example.com');
+    $response->assertJsonPath('status', true);
+    $response->assertJsonPath('data.user.name', 'Jane Doe');
+    $response->assertJsonPath('data.user.email', 'jane@example.com');
 
-    expect($response->json('token'))->toBeString()->not->toBeEmpty();
+    expect($response->json('data.token'))->toBeString()->not->toBeEmpty();
     expect(User::query()->where('email', 'jane@example.com')->exists())->toBeTrue();
 });
 
@@ -44,11 +49,13 @@ it('returns 422 when registering with a duplicate email', function (): void {
 
     $response->assertUnprocessable();
     $response->assertJsonStructure([
+        'status',
         'message',
         'errors' => [
             'email',
         ],
     ]);
+    expect($response->json('status'))->toBeFalse();
     expect($response->json('errors.email'))->toBeArray()->not->toBeEmpty();
 });
 
@@ -62,6 +69,7 @@ it('returns 422 when registering with a weak password', function (): void {
 
     $response->assertUnprocessable();
     $response->assertJsonStructure([
+        'status',
         'message',
         'errors' => [
             'password',
@@ -79,6 +87,7 @@ it('returns 422 when registering with an unconfirmed password', function (): voi
 
     $response->assertUnprocessable();
     $response->assertJsonStructure([
+        'status',
         'message',
         'errors' => [
             'password',
@@ -100,19 +109,23 @@ it('logs in and returns a token', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
+        'status',
+        'message',
         'data' => [
-            'id',
-            'name',
-            'email',
-            'email_verified_at',
-            'created_at',
-            'updated_at',
+            'user' => [
+                'id',
+                'name',
+                'email',
+                'email_verified_at',
+                'created_at',
+                'updated_at',
+            ],
+            'token',
         ],
-        'token',
     ]);
-    $response->assertJsonPath('data.email', 'login@example.com');
+    $response->assertJsonPath('data.user.email', 'login@example.com');
 
-    expect($response->json('token'))->toBeString()->not->toBeEmpty();
+    expect($response->json('data.token'))->toBeString()->not->toBeEmpty();
 });
 
 it('returns 422 when login credentials are wrong', function (): void {
@@ -128,6 +141,7 @@ it('returns 422 when login credentials are wrong', function (): void {
 
     $response->assertUnprocessable();
     $response->assertJson([
+        'status' => false,
         'message' => 'The provided credentials are incorrect.',
         'errors' => [
             'email' => [
@@ -137,7 +151,7 @@ it('returns 422 when login credentials are wrong', function (): void {
     ]);
 });
 
-it('returns 204 on logout and revokes the current token', function (): void {
+it('returns success on logout and revokes the current token', function (): void {
     $user = User::factory()->create([
         'email' => 'logout@example.com',
         'password' => Hash::make('password123'),
@@ -148,11 +162,16 @@ it('returns 204 on logout and revokes the current token', function (): void {
         'password' => 'password123',
     ]);
 
-    $token = $loginResponse->json('token');
+    $token = $loginResponse->json('data.token');
 
     $this->postJson('/api/v1/auth/logout', [], [
         'Authorization' => 'Bearer '.$token,
-    ])->assertNoContent();
+    ])->assertOk()
+        ->assertJson([
+            'status' => true,
+            'message' => 'Logged out successfully',
+            'data' => null,
+        ]);
 
     expect($user->fresh()->tokens()->count())->toBe(0);
 
@@ -162,6 +181,7 @@ it('returns 204 on logout and revokes the current token', function (): void {
         'Authorization' => 'Bearer '.$token,
     ])->assertUnauthorized()
         ->assertJson([
+            'status' => false,
             'message' => 'Unauthenticated.',
         ]);
 
@@ -172,6 +192,7 @@ it('returns 401 for a protected route without a token', function (): void {
     $this->postJson('/api/v1/auth/logout')
         ->assertUnauthorized()
         ->assertJson([
+            'status' => false,
             'message' => 'Unauthenticated.',
         ]);
 });

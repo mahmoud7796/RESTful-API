@@ -8,6 +8,10 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -20,7 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -33,47 +41,35 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($e instanceof ValidationException) {
-                return response()->json([
-                    'message' => $e->getMessage(),
-                    'errors' => $e->errors(),
-                ], 422);
+                return responseError($e->getMessage(), 422, $e->errors());
             }
 
             if ($e instanceof AuthenticationException) {
-                return response()->json([
-                    'message' => 'Unauthenticated.',
-                    'errors' => null,
-                ], 401);
+                return responseError('Unauthenticated.', 401);
             }
 
-            if ($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) {
-                return response()->json([
-                    'message' => 'This action is unauthorized.',
-                    'errors' => null,
-                ], 403);
+            if ($e instanceof UnauthorizedException
+                || $e instanceof AuthorizationException
+                || $e instanceof AccessDeniedHttpException) {
+                return responseError('This action is unauthorized.', 403);
             }
 
             if ($e instanceof ModelNotFoundException || $e instanceof NotFoundHttpException) {
-                return response()->json([
-                    'message' => 'Resource not found.',
-                    'errors' => null,
-                ], 404);
+                return responseError('Resource not found.', 404);
             }
 
             if ($e instanceof MethodNotAllowedHttpException) {
-                return response()->json([
-                    'message' => 'Method not allowed.',
-                    'errors' => null,
-                ], 405);
+                return responseError('Method not allowed.', 405);
             }
 
-            return response()->json([
-                'message' => 'Server Error.',
-                'errors' => config('app.debug') ? [
+            return responseError(
+                'Server Error.',
+                500,
+                config('app.debug') ? [
                     'exception' => $e->getMessage(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                 ] : null,
-            ], 500);
+            );
         });
     })->create();

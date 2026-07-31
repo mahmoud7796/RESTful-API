@@ -76,9 +76,9 @@ Status and priority are backed PHP enums (`ProjectStatus`, `TaskStatus`, `TaskPr
 
 The dashboard needs six metrics across projects and tasks. Instead of six separate `count()` calls, each repository runs one `SELECT` with conditional `SUM(CASE WHEN …)` aggregation. `DashboardService` composes the two result sets. Query cost stays fixed regardless of how many metrics are displayed.
 
-### Authorization: Policies vs query scopes
+### Authorization: Spatie permissions vs ownership
 
-**Policies** answer "may this user act on this specific model?" — ownership checks on `view`, `update`, and `delete`. **Query scopes** (`ownedBy`, `withStatus`) answer "which rows belong in this list?" — applied in repositories so index endpoints never return another user's data. Policies gate individual resources; scopes constrain collections.
+**Spatie `permission:` middleware** on routes gates each action (`projects.index`, `tasks.store`, etc.). Users receive the `user` role with all permissions on register and via the seeder. **Ownership** (user A cannot mutate user B's project) is enforced in `ProjectService` / `TaskService`, not in policies or controllers.
 
 ### Shallow-nested tasks with scopeBindings
 
@@ -138,15 +138,19 @@ Content-Type: application/json
 
 ```json
 {
+  "status": true,
+  "message": "Registered successfully",
   "data": {
-    "id": 1,
-    "name": "Jane Doe",
-    "email": "jane@example.com",
-    "email_verified_at": null,
-    "created_at": "2026-07-31T12:00:00.000000Z",
-    "updated_at": "2026-07-31T12:00:00.000000Z"
-  },
-  "token": "1|abc123..."
+    "user": {
+      "id": 1,
+      "name": "Jane Doe",
+      "email": "jane@example.com",
+      "email_verified_at": null,
+      "created_at": "2026-07-31T12:00:00.000000Z",
+      "updated_at": "2026-07-31T12:00:00.000000Z"
+    },
+    "token": "1|abc123..."
+  }
 }
 ```
 
@@ -163,22 +167,26 @@ Authorization: Bearer {token}
 
 ```json
 {
-  "data": [
-    {
-      "id": 5,
-      "title": "Draft homepage copy",
-      "description": "Hero section first pass",
-      "priority": { "value": "high", "label": "High" },
-      "status": { "value": "in_progress", "label": "In Progress" },
-      "due_date": "2026-08-15",
-      "is_overdue": false,
-      "project_id": 1,
-      "created_at": "2026-07-31T12:00:00.000000Z",
-      "updated_at": "2026-07-31T12:00:00.000000Z"
-    }
-  ],
-  "links": { "first": "...", "last": "...", "prev": null, "next": null },
-  "meta": { "current_page": 1, "per_page": 10, "total": 1 }
+  "status": true,
+  "message": "Tasks loaded successfully",
+  "data": {
+    "data": [
+      {
+        "id": 5,
+        "title": "Draft homepage copy",
+        "description": "Hero section first pass",
+        "priority": { "value": "high", "label": "High" },
+        "status": { "value": "in_progress", "label": "In Progress" },
+        "due_date": "2026-08-15",
+        "is_overdue": false,
+        "project_id": 1,
+        "created_at": "2026-07-31T12:00:00.000000Z",
+        "updated_at": "2026-07-31T12:00:00.000000Z"
+      }
+    ],
+    "links": { "first": "...", "last": "...", "prev": null, "next": null },
+    "meta": { "current_page": 1, "per_page": 10, "total": 1 }
+  }
 }
 ```
 
@@ -195,6 +203,8 @@ Authorization: Bearer {token}
 
 ```json
 {
+  "status": true,
+  "message": "Dashboard loaded successfully",
   "data": {
     "total_projects": 4,
     "active_projects": 2,
@@ -208,24 +218,34 @@ Authorization: Bearer {token}
 
 ## Error Response Format
 
-All API errors use a consistent envelope:
+Success responses:
 
 ```json
 {
+  "status": true,
+  "message": "Projects loaded successfully",
+  "data": { }
+}
+```
+
+Error responses:
+
+```json
+{
+  "status": false,
   "message": "Human-readable summary",
   "errors": { "field": ["Detail"] }
 }
 ```
 
-`errors` is `null` for non-validation failures.
+`errors` is omitted for non-validation failures.
 
 | Status | When |
 |--------|------|
-| `200` | Successful read or update |
+| `200` | Successful read, update, or delete |
 | `201` | Resource created |
-| `204` | Resource deleted (empty body) |
 | `401` | Missing or invalid token |
-| `403` | Authenticated but not authorized |
+| `403` | Missing permission or ownership violation |
 | `404` | Resource not found (includes scope binding mismatches) |
 | `422` | Validation failure (`errors` contains field messages) |
 | `500` | Unexpected server error |

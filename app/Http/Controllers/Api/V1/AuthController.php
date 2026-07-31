@@ -11,7 +11,6 @@ use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class AuthController extends Controller
 {
@@ -23,10 +22,14 @@ class AuthController extends Controller
     {
         $result = $this->authService->register($request->validated());
 
-        return (new UserResource($result['user']))
-            ->additional(['token' => $result['token']])
-            ->response()
-            ->setStatusCode(Response::HTTP_CREATED);
+        return responseSuccess(
+            data: [
+                'user' => new UserResource($result['user']),
+                'token' => $result['token'],
+            ],
+            message: 'Registered successfully',
+            code: 201,
+        );
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -36,15 +39,19 @@ class AuthController extends Controller
             $request->validated('password'),
         );
 
-        return (new UserResource($result['user']))
-            ->additional(['token' => $result['token']])
-            ->response();
+        return responseSuccess(
+            data: [
+                'user' => new UserResource($result['user']),
+                'token' => $result['token'],
+            ],
+            message: 'Logged in successfully',
+        );
     }
 
-    public function logout(Request $request): Response
+    public function logout(Request $request): JsonResponse
     {
         $this->authService->logout($request->user());
 
-        return response()->noContent();
+        return responseSuccess(null, 'Logged out successfully');
     }
 }

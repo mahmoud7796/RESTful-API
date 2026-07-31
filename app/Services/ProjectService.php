@@ -8,6 +8,7 @@ use App\Enums\ProjectStatus;
 use App\Models\Project;
 use App\Models\User;
 use App\Repositories\Contracts\ProjectRepositoryInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ProjectService
@@ -26,18 +27,31 @@ class ProjectService
         return $this->projectRepository->create($user, $attributes);
     }
 
-    public function show(Project $project): Project
+    public function show(Project $project, User $user): Project
     {
+        $this->ensureOwnedBy($project, $user);
+
         return $this->projectRepository->loadTasks($project);
     }
 
-    public function update(Project $project, array $attributes): Project
+    public function update(Project $project, User $user, array $attributes): Project
     {
+        $this->ensureOwnedBy($project, $user);
+
         return $this->projectRepository->update($project, $attributes);
     }
 
-    public function delete(Project $project): bool
+    public function delete(Project $project, User $user): bool
     {
+        $this->ensureOwnedBy($project, $user);
+
         return $this->projectRepository->delete($project);
+    }
+
+    private function ensureOwnedBy(Project $project, User $user): void
+    {
+        if ($project->user_id !== $user->id) {
+            throw new AuthorizationException('This action is unauthorized.');
+        }
     }
 }

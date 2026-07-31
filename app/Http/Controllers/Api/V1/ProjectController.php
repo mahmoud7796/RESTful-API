@@ -12,7 +12,7 @@ use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 
 class ProjectController extends Controller
 {
@@ -20,41 +20,47 @@ class ProjectController extends Controller
 
     public function index(IndexProjectRequest $request): JsonResponse
     {
-        $this->authorize('viewAny', Project::class);
-
-        return ProjectResource::collection($this->projectService->list(
-            $request->user(), $request->status(), $request->perPage(),
-        ))->response();
+        return responseSuccess(
+            data: ProjectResource::collection($this->projectService->list(
+                $request->user(), $request->status(), $request->perPage(),
+            )),
+            message: 'Projects loaded successfully',
+        );
     }
 
     public function store(StoreProjectRequest $request): JsonResponse
     {
-        $this->authorize('create', Project::class);
-
-        return (new ProjectResource($this->projectService->create(
-            $request->user(), $request->validatedArray(),
-        )))->response()->setStatusCode(Response::HTTP_CREATED);
+        return responseSuccess(
+            data: new ProjectResource($this->projectService->create(
+                $request->user(), $request->validatedArray(),
+            )),
+            message: 'Project created successfully',
+            code: 201,
+        );
     }
 
-    public function show(Project $project): ProjectResource
+    public function show(Request $request, Project $project): JsonResponse
     {
-        $this->authorize('view', $project);
-
-        return new ProjectResource($this->projectService->show($project));
+        return responseSuccess(
+            data: new ProjectResource($this->projectService->show($project, $request->user())),
+            message: 'Project loaded successfully',
+        );
     }
 
-    public function update(UpdateProjectRequest $request, Project $project): ProjectResource
+    public function update(UpdateProjectRequest $request, Project $project): JsonResponse
     {
-        $this->authorize('update', $project);
-
-        return new ProjectResource($this->projectService->update($project, $request->validatedArray()));
+        return responseSuccess(
+            data: new ProjectResource($this->projectService->update(
+                $project, $request->user(), $request->validatedArray(),
+            )),
+            message: 'Project updated successfully',
+        );
     }
 
-    public function destroy(Project $project): Response
+    public function destroy(Request $request, Project $project): JsonResponse
     {
-        $this->authorize('delete', $project);
-        $this->projectService->delete($project);
+        $this->projectService->delete($project, $request->user());
 
-        return response()->noContent();
+        return responseSuccess(null, 'Project deleted successfully');
     }
 }

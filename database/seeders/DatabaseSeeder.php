@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->call(PermissionSeeder::class);
+
         $demoUser = User::factory()->create([
             'name' => 'Demo User',
             'email' => 'demo@example.com',

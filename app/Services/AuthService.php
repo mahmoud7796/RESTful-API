@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -21,6 +22,11 @@ class AuthService
             'email' => $attributes['email'],
             'password' => $attributes['password'],
         ]);
+
+        if (! $user->hasRole(PermissionSeeder::ROLE_USER)) {
+            app(PermissionSeeder::class)->run();
+            $user->assignRole(PermissionSeeder::ROLE_USER);
+        }
 
         return [
             'user' => $user,

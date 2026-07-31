@@ -24,8 +24,8 @@ it('returns only the authenticated users projects on index', function (): void {
     $response = $this->getJson('/api/v1/projects', $this->authHeaders);
 
     $response->assertOk();
-    expect($response->json('data'))->toHaveCount(2);
-    expect(collect($response->json('data'))->pluck('id')->sort()->values()->all())
+    expect($response->json('data.data'))->toHaveCount(2);
+    expect(collect($response->json('data.data'))->pluck('id')->sort()->values()->all())
         ->toEqual($this->user->projects()->pluck('id')->sort()->values()->all());
 });
 
@@ -38,12 +38,16 @@ it('filters index by status and includes pagination meta', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data' => [['id', 'name', 'description', 'status', 'tasks_count', 'created_at', 'updated_at']],
-        'links' => ['first', 'last', 'prev', 'next'],
-        'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
+        'status',
+        'message',
+        'data' => [
+            'data' => [['id', 'name', 'description', 'status', 'tasks_count', 'created_at', 'updated_at']],
+            'links' => ['first', 'last', 'prev', 'next'],
+            'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
+        ],
     ]);
-    expect($response->json('data'))->toHaveCount(1);
-    expect($response->json('data.0.status.value'))->toBe('active');
+    expect($response->json('data.data'))->toHaveCount(1);
+    expect($response->json('data.data.0.status.value'))->toBe('active');
 });
 
 it('stores a project and returns 201 with the correct user_id', function (): void {
@@ -55,6 +59,8 @@ it('stores a project and returns 201 with the correct user_id', function (): voi
 
     $response->assertCreated();
     $response->assertJsonStructure([
+        'status',
+        'message',
         'data' => [
             'id',
             'name',
@@ -80,7 +86,7 @@ it('returns 422 when storing with an invalid status', function (): void {
     ], $this->authHeaders);
 
     $response->assertUnprocessable();
-    $response->assertJsonStructure(['message', 'errors' => ['status']]);
+    $response->assertJsonStructure(['status', 'message', 'errors' => ['status']]);
 });
 
 it('returns 403 when showing another users project', function (): void {
@@ -89,8 +95,8 @@ it('returns 403 when showing another users project', function (): void {
     $this->getJson("/api/v1/projects/{$project->id}", $this->authHeaders)
         ->assertForbidden()
         ->assertJson([
+            'status' => false,
             'message' => 'This action is unauthorized.',
-            'errors' => null,
         ]);
 });
 
@@ -98,8 +104,8 @@ it('returns 404 when showing a non-existent project', function (): void {
     $this->getJson('/api/v1/projects/999999', $this->authHeaders)
         ->assertNotFound()
         ->assertJson([
+            'status' => false,
             'message' => 'Resource not found.',
-            'errors' => null,
         ]);
 });
 
@@ -125,11 +131,16 @@ it('updates only the provided fields', function (): void {
     expect($project->status)->toBe(ProjectStatus::Active);
 });
 
-it('soft-deletes a project and returns 204', function (): void {
+it('soft-deletes a project and returns success', function (): void {
     $project = Project::factory()->for($this->user)->create();
 
     $this->deleteJson("/api/v1/projects/{$project->id}", [], $this->authHeaders)
-        ->assertNoContent();
+        ->assertOk()
+        ->assertJson([
+            'status' => true,
+            'message' => 'Project deleted successfully',
+            'data' => null,
+        ]);
 
     expect($project->fresh()->trashed())->toBeTrue();
 });
@@ -142,7 +153,7 @@ it('excludes soft-deleted projects from index', function (): void {
     $response = $this->getJson('/api/v1/projects', $this->authHeaders);
 
     $response->assertOk();
-    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$active->id]);
+    expect(collect($response->json('data.data'))->pluck('id')->all())->toBe([$active->id]);
 });
 
 it('returns nested tasks on show', function (): void {

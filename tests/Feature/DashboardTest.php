@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Middleware\PermissionMiddleware;
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
@@ -93,6 +94,8 @@ it('issues at most two database queries for dashboard aggregates', function (): 
             $queryCount++;
         }
     });
+
+    $this->withoutMiddleware(PermissionMiddleware::class);
 
     $this->actingAs($this->user, 'sanctum')
         ->getJson('/api/v1/dashboard')

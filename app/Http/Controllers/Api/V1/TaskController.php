@@ -13,7 +13,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
@@ -21,52 +21,59 @@ class TaskController extends Controller
 
     public function index(IndexTaskRequest $request, Project $project): JsonResponse
     {
-        $this->authorize('view', $project);
-
-        return TaskResource::collection($this->taskService->list(
-            $project,
-            $request->status(),
-            $request->priority(),
-            $request->search(),
-            $request->perPage(),
-        ))->response();
+        return responseSuccess(
+            data: TaskResource::collection($this->taskService->list(
+                $project,
+                $request->user(),
+                $request->status(),
+                $request->priority(),
+                $request->search(),
+                $request->perPage(),
+            )),
+            message: 'Tasks loaded successfully',
+        );
     }
 
     public function store(StoreTaskRequest $request, Project $project): JsonResponse
     {
-        $this->authorize('update', $project);
-
-        return (new TaskResource($this->taskService->create(
-            $project,
-            $request->validatedArray(),
-        )))->response()->setStatusCode(Response::HTTP_CREATED);
+        return responseSuccess(
+            data: new TaskResource($this->taskService->create(
+                $project,
+                $request->user(),
+                $request->validatedArray(),
+            )),
+            message: 'Task created successfully',
+            code: 201,
+        );
     }
 
-    public function show(Task $task): TaskResource
+    public function show(Request $request, Task $task): JsonResponse
     {
-        $this->authorize('view', $task);
-
-        return new TaskResource($task);
+        return responseSuccess(
+            data: new TaskResource($this->taskService->show($task, $request->user())),
+            message: 'Task loaded successfully',
+        );
     }
 
-    public function showNested(Project $project, Task $task): TaskResource
+    public function showNested(Request $request, Project $project, Task $task): JsonResponse
     {
-        return $this->show($task);
+        return $this->show($request, $task);
     }
 
-    public function update(UpdateTaskRequest $request, Task $task): TaskResource
+    public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
-        $this->authorize('update', $task);
-
-        return new TaskResource($this->taskService->update($task, $request->validatedArray()));
+        return responseSuccess(
+            data: new TaskResource($this->taskService->update(
+                $task, $request->user(), $request->validatedArray(),
+            )),
+            message: 'Task updated successfully',
+        );
     }
 
-    public function destroy(Task $task): Response
+    public function destroy(Request $request, Task $task): JsonResponse
     {
-        $this->authorize('delete', $task);
+        $this->taskService->delete($task, $request->user());
 
-        $this->taskService->delete($task);
-
-        return response()->noContent();
+        return responseSuccess(null, 'Task deleted successfully');
     }
 }

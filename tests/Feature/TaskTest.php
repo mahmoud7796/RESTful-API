@@ -28,8 +28,8 @@ it('lists only tasks belonging to the given project', function (): void {
     $response = $this->getJson("/api/v1/projects/{$this->project->id}/tasks", $this->authHeaders);
 
     $response->assertOk();
-    expect($response->json('data'))->toHaveCount(3);
-    expect(collect($response->json('data'))->pluck('project_id')->unique()->all())->toBe([$this->project->id]);
+    expect($response->json('data.data'))->toHaveCount(3);
+    expect(collect($response->json('data.data'))->pluck('project_id')->unique()->all())->toBe([$this->project->id]);
 });
 
 dataset('task statuses', fn () => collect(TaskStatus::cases())->mapWithKeys(
@@ -47,8 +47,8 @@ it('filters tasks by status', function (TaskStatus $filterStatus): void {
     );
 
     $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-    expect($response->json('data.0.status.value'))->toBe($filterStatus->value);
+    expect($response->json('data.data'))->toHaveCount(1);
+    expect($response->json('data.data.0.status.value'))->toBe($filterStatus->value);
 })->with('task statuses');
 
 dataset('task priorities', fn () => collect(TaskPriority::cases())->mapWithKeys(
@@ -66,8 +66,8 @@ it('filters tasks by priority', function (TaskPriority $filterPriority): void {
     );
 
     $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-    expect($response->json('data.0.priority.value'))->toBe($filterPriority->value);
+    expect($response->json('data.data'))->toHaveCount(1);
+    expect($response->json('data.data.0.priority.value'))->toBe($filterPriority->value);
 })->with('task priorities');
 
 it('searches tasks by title case-insensitively with partial matches', function (): void {
@@ -80,8 +80,8 @@ it('searches tasks by title case-insensitively with partial matches', function (
     );
 
     $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-    expect($response->json('data.0.title'))->toBe('Deploy Production Release');
+    expect($response->json('data.data'))->toHaveCount(1);
+    expect($response->json('data.data.0.title'))->toBe('Deploy Production Release');
 });
 
 it('treats a literal percent sign in search as a literal character', function (): void {
@@ -95,8 +95,8 @@ it('treats a literal percent sign in search as a literal character', function ()
     );
 
     $response->assertOk();
-    expect($response->json('data'))->toHaveCount(1);
-    expect($response->json('data.0.title'))->toBe('100% complete');
+    expect($response->json('data.data'))->toHaveCount(1);
+    expect($response->json('data.data.0.title'))->toBe('100% complete');
 });
 
 it('returns 403 when creating a task in another users project', function (): void {
@@ -106,8 +106,8 @@ it('returns 403 when creating a task in another users project', function (): voi
 
     $response->assertForbidden();
     $response->assertJson([
+        'status' => false,
         'message' => 'This action is unauthorized.',
-        'errors' => null,
     ]);
 });
 
@@ -117,8 +117,8 @@ it('returns 404 when a task does not belong to the scoped project', function ():
     $this->getJson("/api/v1/projects/{$this->project->id}/tasks/{$task->id}", $this->authHeaders)
         ->assertNotFound()
         ->assertJson([
+            'status' => false,
             'message' => 'Resource not found.',
-            'errors' => null,
         ]);
 });
 
@@ -132,14 +132,18 @@ it('returns correct pagination meta when per_page is set', function (): void {
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data',
-        'links' => ['first', 'last', 'prev', 'next'],
-        'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
+        'status',
+        'message',
+        'data' => [
+            'data',
+            'links' => ['first', 'last', 'prev', 'next'],
+            'meta' => ['current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'],
+        ],
     ]);
-    expect($response->json('data'))->toHaveCount(5);
-    expect($response->json('meta.per_page'))->toBe(5);
-    expect($response->json('meta.total'))->toBe(20);
-    expect($response->json('meta.last_page'))->toBe(4);
+    expect($response->json('data.data'))->toHaveCount(5);
+    expect($response->json('data.meta.per_page'))->toBe(5);
+    expect($response->json('data.meta.total'))->toBe(20);
+    expect($response->json('data.meta.last_page'))->toBe(4);
 });
 
 it('excludes soft-deleted tasks from the list', function (): void {
@@ -150,7 +154,7 @@ it('excludes soft-deleted tasks from the list', function (): void {
     $response = $this->getJson("/api/v1/projects/{$this->project->id}/tasks", $this->authHeaders);
 
     $response->assertOk();
-    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$visible->id]);
+    expect(collect($response->json('data.data'))->pluck('id')->all())->toBe([$visible->id]);
 });
 
 it('reports is_overdue true for past due dates when status is not done', function (): void {
