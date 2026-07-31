@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->string('title', 255);
             $table->text('description')->nullable();
-            // String, not a DB enum: domain values live in TaskPriority/TaskStatus and can evolve without ALTER TABLE.
             $table->string('priority', 10)->default('medium');
             $table->string('status', 20)->default('todo');
             $table->date('due_date')->nullable();
