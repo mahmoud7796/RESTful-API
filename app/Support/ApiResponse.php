@@ -10,7 +10,7 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 
 final class ApiResponse
 {
-    public static function success(mixed $data = null, ?string $message = null, int $code = 200): JsonResponse
+    public static function success(mixed $data = null, int $code = 200): JsonResponse
     {
         if ($data instanceof ResourceCollection || $data instanceof JsonResource) {
             return $data->response()->setStatusCode($code);
