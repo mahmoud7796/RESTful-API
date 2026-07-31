@@ -68,7 +68,14 @@ php artisan l5-swagger:generate
 
 Swagger UI: [http://localhost:8000/api/documentation](http://localhost:8000/api/documentation)
 
-Click **Authorize**, paste the bearer token from login/register (`token` in the response), then try protected routes.
+1. Run **POST /auth/login** (or register) in Swagger and copy the `token` field from the response.
+2. Click the **Authorize** button (lock icon, top right).
+3. In the **sanctum** field, paste the token **only** — do not type `Bearer`; Swagger adds it.
+4. Click **Authorize**, then **Close**, then **Try it out** on protected routes.
+
+The generated curl may show `X-CSRF-TOKEN` in addition to `Authorization` — that is normal for the Swagger UI page. If `Authorization` is missing, you have not authorized yet.
+
+Unauthenticated API requests return **401** with `{ "message": "Unauthenticated." }`, not 500.
 
 Postman collection: import `docs/postman_collection.json` (alternative to Swagger UI).
 
@@ -251,11 +258,10 @@ Error responses:
 docker compose exec app php artisan test
 ```
 
-The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, authorization (Spatie permissions and service ownership), project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — currently `ProjectService` — to verify delegation without a database.
+The suite uses **Pest** exclusively for domain tests. **Feature tests** hit real HTTP routes with `RefreshDatabase` and cover authentication, authorization (Spatie permissions and service ownership), project CRUD, task CRUD with filter/search datasets, dashboard aggregates (including a query-count assertion), and the overdue notification job. **Unit tests** mock repository interfaces — `ProjectService`, `AuthService` — to verify delegation without a database.
 
 ## What I Would Add With More Time
 
-- A `UserRepository` to bring auth in line with the repository layering used elsewhere.
 - Unit tests for `TaskService` and `DashboardService`.
 - CI pipeline (Pint, Pest, static analysis) on every push.
 - Rate limiting on auth endpoints and API-wide throttling.

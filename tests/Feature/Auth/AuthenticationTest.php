@@ -171,3 +171,11 @@ it('returns 401 for a protected route without a token', function (): void {
             'message' => 'Unauthenticated.',
         ]);
 });
+
+it('returns 401 for the dashboard without a token even without an Accept header', function (): void {
+    $this->get('/api/v1/dashboard')
+        ->assertUnauthorized()
+        ->assertJson([
+            'message' => 'Unauthenticated.',
+        ]);
+});

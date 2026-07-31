@@ -5,18 +5,23 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\User;
+use App\Repositories\Contracts\UserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService
 {
+    public function __construct(
+        private readonly UserRepositoryInterface $users,
+    ) {}
+
     /**
      * @return array{user: User, token: string}
      */
     public function register(array $attributes): array
     {
-        $user = User::query()->create([
+        $user = $this->users->create([
             'name' => $attributes['name'],
             'email' => $attributes['email'],
             'password' => $attributes['password'],
@@ -33,7 +38,7 @@ class AuthService
      */
     public function login(string $email, string $password): array
     {
-        $user = User::query()->where('email', $email)->first();
+        $user = $this->users->findByEmail($email);
 
         if ($user === null || ! Hash::check($password, $user->password)) {
             throw ValidationException::withMessages([
